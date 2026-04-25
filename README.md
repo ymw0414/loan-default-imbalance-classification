@@ -2,12 +2,6 @@
 
 A comparative study of **shallow vs deep learning models** under **class imbalance handling techniques** for credit default prediction.
 
-**Course:** DATS 6202 (Machine Learning I), Spring 2026
-**Team:** Minwoo Yoo, Nathan
-**Instructor:** Prof. Yuxiao Huang, GWU
-
----
-
 ## Problem
 
 Predict the probability that a Home Credit applicant defaults on a loan (binary classification, `TARGET ∈ {0, 1}`). The training set is **imbalanced** — only ~8% of applicants default — which makes naive models prone to favor the majority class.
