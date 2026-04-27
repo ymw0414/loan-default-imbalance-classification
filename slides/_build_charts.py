@@ -136,22 +136,26 @@ def chart_imbalance_bar() -> str | None:
 def chart_class_balance() -> str:
     """Static chart for the EDA slide showing the 8% / 92% class imbalance."""
 
-    fig, ax = plt.subplots(figsize=(6.5, 3.6), dpi=160)
-    classes = ['No default (TARGET=0)', 'Default (TARGET=1)']
+    fig, ax = plt.subplots(figsize=(7.5, 5.0), dpi=180)
+    classes = ['No default\n(TARGET = 0)', 'Default\n(TARGET = 1)']
     counts  = [282686, 24825]
     pct     = [c / sum(counts) * 100 for c in counts]
-    bars = ax.barh(classes, counts, color=[PALETTE[1], '#E74C3C'])
+    bars = ax.barh(classes, counts, height=0.55, color=['#1A365D', '#D97706'])
     for bar, c, p in zip(bars, counts, pct):
         ax.text(bar.get_width() + 4000, bar.get_y() + bar.get_height() / 2,
-                f'{c:,}  ({p:.2f} %)', va='center', fontsize=11, color=TITLE_COLOR)
-    ax.set_xlim(0, 320000)
-    ax.set_xlabel('Number of applicants', color=GREY)
-    ax.set_title('Severe class imbalance: ~8 % positive', color=TITLE_COLOR, fontsize=13, weight='bold')
+                f'{c:,}  ({p:.2f}%)', va='center', fontsize=14, weight='bold',
+                color='#1A365D')
+    ax.set_xlim(0, 340000)
+    ax.set_xlabel('Number of applicants', fontsize=11, color='#555555')
+    ax.set_title('Severe class imbalance — only 8% positive',
+                 fontsize=15, weight='bold', color='#1A365D', pad=12)
+    ax.tick_params(axis='y', labelsize=12)
+    ax.tick_params(axis='x', labelsize=10)
     for spine in ('top', 'right'):
         ax.spines[spine].set_visible(False)
     plt.tight_layout()
     out = os.path.join(FIG_DIR, 'class_balance.png')
-    plt.savefig(out, bbox_inches='tight')
+    plt.savefig(out, bbox_inches='tight', dpi=180)
     plt.close(fig)
     print('wrote', out)
     return out

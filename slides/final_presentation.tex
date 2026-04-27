@@ -1,5 +1,5 @@
 % =====================================================================
-% Final-project presentation deck (10 slides, 16:9)
+% Final-project presentation deck (9 slides, 16:9)
 % Compile:  pdflatex final_presentation.tex   (twice for cross-refs)
 % =====================================================================
 \documentclass[aspectratio=169,11pt]{beamer}
@@ -10,24 +10,32 @@
 \usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{xcolor}
+\usepackage{array}
+\usepackage{tabularx}
 \usepackage{appendixnumberbeamer}
 
-% --- modest accent colors (metropolis defaults are already excellent) ---
+% --- palette ---
 \definecolor{primary}{HTML}{1A365D}     % deep navy
-\definecolor{accent}{HTML}{D97706}      % warm orange
-\definecolor{warn}{HTML}{B91C1C}        % red
+\definecolor{accent}{HTML}{D97706}      % orange — RESERVED for the few critical findings
+\definecolor{warn}{HTML}{B91C1C}        % red — only "this hurt" callout
+\definecolor{muted}{HTML}{6B7280}
 
 \setbeamercolor{title}{fg=primary}
 \setbeamercolor{frametitle}{fg=white, bg=primary}
 \setbeamercolor{progress bar}{fg=accent}
 \setbeamercolor{normal text}{fg=black, bg=white}
-\setbeamercolor{background canvas}{bg=white}    % override metropolis off-white
+\setbeamercolor{background canvas}{bg=white}
 \setbeamercolor{itemize item}{fg=primary}
-\setbeamercolor{itemize subitem}{fg=accent}
+\setbeamercolor{itemize subitem}{fg=primary}
 \setbeamercolor{alerted text}{fg=accent}
 
-\newcommand{\hi}[1]{{\color{accent}\textbf{#1}}}
-\newcommand{\hp}[1]{{\color{primary}\textbf{#1}}}
+\newcommand{\hi}[1]{{\color{accent}\textbf{#1}}}      % orange — sparing only
+\newcommand{\hp}[1]{{\color{primary}\textbf{#1}}}     % navy — table headers / labels
+
+% Tabularx column types: centered, right-aligned variants
+\newcolumntype{C}{>{\centering\arraybackslash}X}
+\newcolumntype{R}{>{\raggedleft\arraybackslash}X}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
 
 \title{Loan Default Prediction}
 \subtitle{Comparing Classic ML and Neural Networks under Class Imbalance}
@@ -42,122 +50,110 @@
 % --------------------------- Slide 1 — Title ---------------------------
 \maketitle
 
-% --------------------------- Slide 2 — Problem ---------------------------
+% --------------------------- Slide 2 — Problem & Motivation ---------------------------
 \begin{frame}{Problem \& Motivation}
-  \textbf{The task} \quad Predict whether a loan applicant defaults  (\texttt{TARGET} $\in \{0, 1\}$).
-
-  \bigskip
-  \begin{tabular}{@{}p{0.30\textwidth}@{\quad}p{0.62\textwidth}@{}}
+  \centering
+  \begin{tabularx}{0.92\textwidth}{@{}p{2.4cm} L@{}}
     \toprule
-    \hp{Default rate}      & only \hi{8.07\%} of applicants  (24{,}825 / 307{,}511) \\
-    \hp{Naive baseline}    & ``always predict no default'' $\to$ 92\% accuracy, \hi{0\% recall} \\
-    \hp{Primary metric}    & \hi{ROC AUC}  (accuracy is misleading on imbalanced data) \\
+    \hp{Task}        & \textbf{Binary classification} — predict whether a Home Credit applicant defaults  (\texttt{TARGET} $\in \{0, 1\}$). \\[0.4em]
+    \hp{Data}        & 307{,}511 applicants $\times$ 122 features  (Kaggle, real-world). \\[0.4em]
+    \hp{Challenge}   & Severe class imbalance — only \hi{8.07\%} default; a ``predict-no-default'' baseline scores 92\% accuracy with 0\% recall. \\[0.4em]
+    \hp{Approach}    & Compare classic ML (LR, RF, HGBC) and neural networks (Shallow / Deep MLP) under the same pipeline; then study imbalance-handling on the best NN. \\[0.4em]
+    \hp{Metric}      & ROC AUC  (accuracy is misleading on imbalanced data). \\
     \bottomrule
-  \end{tabular}
+  \end{tabularx}
 
   \bigskip
   \begin{center}
-    {\color{accent}\itshape Do classic shallow learners and neural networks\\[0.1em]
-    respond differently to class imbalance handling?}
+    \itshape Research question: do classic shallow learners and neural networks\\[0.1em]
+    respond differently to class imbalance handling?
   \end{center}
 \end{frame}
 
 % --------------------------- Slide 3 — Dataset ---------------------------
 \begin{frame}{Dataset · Home Credit Default Risk}
   \begin{columns}[T,onlytextwidth]
-    \column{0.50\textwidth}
-      \begin{tabular}{@{}lr@{}}
+    \column{0.46\textwidth}
+      \small
+      \begin{tabular}{@{}p{2.6cm}p{4.0cm}@{}}
         \toprule
-        Train applicants    & \hi{307{,}511} \\
-        Test applicants     & 48{,}744 \\
-        Features            & 122 \\
-        Default rate        & \hi{8.07\%} \\
+        \hp{Structure}     & Tabular  (row $=$ one applicant) \\
+        \hp{Observations}  & 307{,}511 train  /  48{,}744 test \\
+        \hp{Features}      & 122 columns\newline (102 numeric, 16 categorical) \\
+        \hp{Target}        & \texttt{TARGET} $\in \{0, 1\}$\newline 1 $=$ default,\, 0 $=$ repaid \\
+        \hp{Imbalance}     & default rate $=$ \hi{8.07\%} \\
         \bottomrule
       \end{tabular}
 
       \bigskip
-      \hp{Strongest signals}
-      \begin{itemize}
-        \item \texttt{EXT\_SOURCE\_*} external credit scores  ($|\rho|\!\approx\!0.16$--$0.18$)
-        \item \texttt{DAYS\_EMPLOYED}\,$=\,$365{,}243 sentinel  (18\% unemployed)
-        \item Building-info columns 50--70\% missing
+      \normalsize
+      \hp{Feature themes}
+      \begin{itemize}\small
+        \item Demographics, employment, credit-bureau summaries, requested loan amount
+        \item \texttt{EXT\_SOURCE\_1/2/3} external credit scores  (strongest signals)
       \end{itemize}
 
-    \column{0.48\textwidth}
+    \column{0.52\textwidth}
+      \vspace{-0.4em}
       \includegraphics[width=\linewidth]{../result/home_credit/figure/class_balance.png}
   \end{columns}
 \end{frame}
 
-% --------------------------- Slide 4 — Pipeline ---------------------------
-\begin{frame}{Shared Pipeline}
-  \begin{tabular}{@{}p{0.22\textwidth}@{\quad}p{0.70\textwidth}@{}}
-    \toprule
-    \hp{Step}       & \hp{Operation} \\
-    \midrule
-    Split           & 80 / 20 stratified train--val,  \texttt{random\_state=42} \\
-    Drop ID         & remove \texttt{SK\_ID\_CURR}  (kept aside for submission) \\
-    Impute          & numeric NaN $\to$ column mean  (categorical NaN handled by encoder) \\
-    Encode          & one-hot 16 categoricals $\to$ \hi{244 features} total \\
-    Scale           & \texttt{StandardScaler} fitted on train only \\
-    Tune            & \texttt{GridSearchCV} + \texttt{PredefinedSplit},  scoring = \texttt{roc\_auc} \\
-    \bottomrule
-  \end{tabular}
-
-  \bigskip
-  Same pipeline for all five models $\to$ fair comparison.
-\end{frame}
-
-% --------------------------- Slide 5 — Classic ML ---------------------------
+% --------------------------- Slide 4 — Classic ML ---------------------------
 \begin{frame}{Classic ML Models}
+  \centering
   \small
-  \begin{tabular}{@{}lll r@{}}
+  \begin{tabularx}{0.95\textwidth}{@{}l L r@{}}
     \toprule
-    \hp{Model}                & \hp{Family}        & \hp{Tuned hyperparameters}                & \hp{Val AUC} \\
+    \hp{Model (family)}                                  & \hp{Best hyperparameters}                                                              & \hp{Val AUC} \\
     \midrule
-    Logistic Regression       & Linear             & \texttt{C}, \texttt{tol},  \texttt{class\_weight=balanced}            & 0.7487 \\
-    Random Forest             & Tree (bagging)     & \texttt{n\_estimators}, \texttt{min\_samples\_*}                       & 0.7470 \\
-    HistGradientBoosting      & Tree (boosting)    & \texttt{learning\_rate}, \texttt{max\_iter}, \texttt{min\_samples\_leaf} & \hi{\textbf{0.7595}} \\
+    Logistic Regression \emph{(linear)}                  & \texttt{C}=0.1; \texttt{class\_weight=balanced}                                        & 0.7487 \\[0.3em]
+    Random Forest \emph{(bagging)}                       & \texttt{n\_estimators}=200; \texttt{min\_samples\_split}=100; \texttt{class\_weight=balanced} & 0.7470 \\[0.3em]
+    HistGradientBoosting \emph{(boosting)}               & \texttt{learning\_rate}=0.05; \texttt{max\_iter}=200; \texttt{min\_samples\_leaf}=100   & \hi{\textbf{0.7595}} \\
     \bottomrule
-  \end{tabular}
+  \end{tabularx}
 
   \bigskip
   \normalsize
-  \hp{Findings}
+  \raggedright
+  \hp{Key takeaways}
   \begin{itemize}
-    \item \hi{Boosting wins} — typical for tabular data.
-    \item RF overfits at \texttt{leaf=1}  (train 0.96 vs val 0.747); the regularized config wins.
-    \item LR is competitive — most signal is linear in \texttt{EXT\_SOURCE\_*}.
+    \item \texttt{class\_weight='balanced'} on LR / RF — handles imbalance directly in the loss.
+    \item HGBC wins by $\sim$1 AUC point — boosted trees usually dominate tabular data.
+    \item RF overfits at \texttt{leaf=1}: train AUC 0.96 vs val 0.747; regularized leaf wins.
   \end{itemize}
 \end{frame}
 
-% --------------------------- Slide 6 — Neural Network ---------------------------
+% --------------------------- Slide 5 — Neural Network ---------------------------
 \begin{frame}{Neural Network Models}
+  \centering
   \small
-  \begin{tabular}{@{}lll r@{}}
+  \begin{tabularx}{0.85\textwidth}{@{}l c c r@{}}
     \toprule
-    \hp{Architecture}              & \hp{Hidden}        & \hp{Parameters}   & \hp{Val AUC} \\
+    \hp{Architecture}    & \hp{Hidden layers}    & \hp{Parameters}    & \hp{Val AUC} \\
     \midrule
-    Shallow MLP                    & $(64,)$            & $\sim$15.7K       & 0.7405 \\
-    Deep MLP                       & $(128, 64, 32)$    & $\sim$42K         & \hi{\textbf{0.7416}} \\
+    Shallow MLP          & $(64,)$               & $\sim$15.7K        & 0.7405 \\
+    Deep MLP             & $(128, 64, 32)$       & $\sim$42K          & \textbf{0.7416} \\
     \bottomrule
-  \end{tabular}
+  \end{tabularx}
 
   \bigskip
   \normalsize
+  \raggedright
   Both: ReLU \,·\, Adam \,·\, early stopping. Tuned over
   \texttt{alpha} $\in \{10^{-4}, 10^{-3}\}$, \texttt{lr} $\in \{0.001, 0.005\}$.
   Best for both: $\alpha = 10^{-3}$, \texttt{lr} $= 0.005$.
 
   \bigskip
-  \hp{Findings}
+  \hp{Key takeaways}
   \begin{itemize}
-    \item \hi{Depth doesn't help}: $0.7405$ vs $0.7416$  (within noise).
-    \item Tripling parameters bought \emph{nothing}.
+    \item Depth doesn't help: $0.7405$ vs $0.7416$  (within noise).
+    \item Tripling parameters bought nothing.
     \item Both NNs land below the classic learners.
   \end{itemize}
 \end{frame}
 
-% --------------------------- Slide 7 — Combined ---------------------------
+% --------------------------- Slide 6 — Combined ---------------------------
 \begin{frame}{Combined Leaderboard}
   \begin{columns}[T,onlytextwidth]
     \column{0.62\textwidth}
@@ -165,6 +161,7 @@
 
     \column{0.36\textwidth}
       \vspace{0.7em}
+      \centering
       \begin{tabular}{@{}lr@{}}
         \toprule
         \hp{Model}      & \hp{Val AUC} \\
@@ -178,29 +175,32 @@
       \end{tabular}
 
       \bigskip
-      Tree boosting wins by $\sim$\hi{1 AUC point}.
+      \raggedright
+      Tree boosting wins by $\sim$1 AUC point.
   \end{columns}
 \end{frame}
 
-% --------------------------- Slide 8 — Imbalance ---------------------------
+% --------------------------- Slide 7 — Imbalance Handling ---------------------------
 \begin{frame}{Imbalance Handling on the Best MLP}
+  \centering
   \small
-  \begin{tabular}{@{}lcccccc@{}}
+  \begin{tabularx}{\textwidth}{@{}l C C C C C C@{}}
     \toprule
     \hp{Method}              & \hp{Threshold} & \hp{ROC AUC} & \hp{PR AUC} & \hp{Precision} & \hp{Recall} & \hp{F1} \\
     \midrule
     Baseline                 & 0.500 & 0.745 & 0.222 & 0.00 & 0.00 & 0.00 \\
     SMOTE                    & 0.500 & {\color{warn}\textbf{0.648}} & 0.134 & 0.16 & 0.21 & 0.18 \\
-    Threshold tuning $\star$ & \hi{0.164} & 0.745 & 0.222 & 0.24 & \hi{\textbf{0.40}} & \hi{\textbf{0.30}} \\
+    Threshold tuning $\star$ & 0.164 & 0.745 & 0.222 & 0.24 & \hi{\textbf{0.40}} & \textbf{0.30} \\
     \bottomrule
-  \end{tabular}
+  \end{tabularx}
 
   \bigskip
   \normalsize
-  \hp{Findings}
+  \raggedright
+  \hp{Key takeaways}
   \begin{itemize}
-    \item Baseline at 0.5 cutoff: AUC 0.745 but \hi{recall 0\%}  (no prediction crosses 0.5).
-    \item SMOTE \hi{hurts}: AUC drops 0.10.
+    \item Baseline at 0.5 cutoff: AUC 0.745 but recall \hi{0\%}  (no prediction crosses 0.5).
+    \item SMOTE hurts: AUC drops 0.10.
     \item Threshold tuning at 0.164 lifts recall to \hi{40\%}.
   \end{itemize}
 
@@ -208,13 +208,13 @@
   \begin{center}{\color{accent}\itshape Choosing the threshold matters more than rebalancing the data.}\end{center}
 \end{frame}
 
-% --------------------------- Slide 9 — Conclusions ---------------------------
+% --------------------------- Slide 8 — Conclusions ---------------------------
 \begin{frame}{Conclusions}
   \hp{What we learned}
   \begin{itemize}
-    \item \hi{HistGradientBoosting} wins  (val AUC $= 0.7595$).
-    \item \hi{Neural networks} tie LR / RF — depth alone does not help on tabular data.
-    \item \hi{Threshold tuning} lifts MLP recall from 0\% to 40\%; \hi{SMOTE} hurt AUC.
+    \item HistGradientBoosting wins overall  (val AUC $=$ \hi{0.7595}).
+    \item Neural networks tie LR / RF — depth alone does not help on tabular data.
+    \item Threshold tuning lifts MLP recall from \hi{0\% to 40\%}; SMOTE hurt AUC.
   \end{itemize}
 
   \bigskip
@@ -223,28 +223,14 @@
     \item Only main \texttt{application\_*.csv} tables  (auxiliary tables typically add several AUC points).
     \item \texttt{PredefinedSplit} is fast but optimistic; full $k$-fold CV would tighten CIs.
   \end{itemize}
-
-  \bigskip
-  \hp{Future work}
-  \begin{itemize}
-    \item Auxiliary tables  \,·\,  ensemble HGBC $+$ best MLP  \,·\,  Platt / isotonic calibration.
-  \end{itemize}
 \end{frame}
 
-% --------------------------- Slide 10 — Closing ---------------------------
-\begin{frame}{Thank You}
+% --------------------------- Slide 9 — Recording ---------------------------
+\begin{frame}{Recording}
   \vfill
   \begin{center}
-    {\color{accent}\Large Questions?}
-  \end{center}
-
-  \vspace{2em}
-  \begin{center}
-    \begin{tabular}{r@{\quad}l}
-      \hp{Recording} & \texttt{<<INSERT RECORDING LINK BEFORE SUBMISSION>>} \\[0.6em]
-      \hp{Code}      & \texttt{github.com/ymw0414/loan-default-imbalance-classification} \\[0.6em]
-      \hp{Team}      & Minwoo Yoo \,·\, Nathaniel Badalov \\
-    \end{tabular}
+    {\Large \texttt{<<INSERT RECORDING LINK BEFORE SUBMISSION>>}}\\[1.5em]
+    {\color{muted}\itshape Minwoo Yoo  \,·\,  Nathaniel Badalov}
   \end{center}
   \vfill
 \end{frame}
