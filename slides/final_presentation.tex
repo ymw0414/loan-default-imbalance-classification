@@ -393,6 +393,7 @@ Tree-based models still outperform deep learning on tabular data
     \item Neural networks don't help on this tabular data — both MLPs lag classic shallow learners by $\sim$1--2 AUC pts
     \begin{itemize}
         \item Even depth doesn't rescue them: Deep MLP $\approx$ Shallow MLP (within noise)
+        \item Why: tabular data with pre-engineered features (\texttt{EXT\_SOURCE\_*}) favors trees over NN  (Grinsztajn et al., NeurIPS 2022)
     \end{itemize}
 \end{itemize}
 
