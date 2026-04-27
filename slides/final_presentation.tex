@@ -199,14 +199,14 @@
 
 % --------------------------- Slide 8 — Conclusions ---------------------------
 \begin{frame}{Conclusions}
-  \footnotesize
-  \hp{Best model overall}\\
-  HistGradientBoosting takes the top spot at val ROC AUC $=$ \hi{0.7595},
-  indicating that nonlinear tree boosting captures interactions across
-  heterogeneous features. LR and RF perform similarly, both slightly below
-  HGBC — LR likely benefits from strong linear predictors such as
-  \texttt{EXT\_SOURCE\_*}. Among NNs, Deep MLP barely edges Shallow MLP
-  (0.7416 vs 0.7405); both lag classic shallow learners by $\sim$1--2 AUC pts.
+  \scriptsize
+  \hp{Best model overall}
+  \begin{itemize}
+    \item \textbf{HGBC wins}  (val AUC $=$ \hi{0.7595}) — nonlinear tree boosting captures feature interactions.
+    \item \textbf{LR \& RF}  close behind — LR benefits from strong linear predictors (\texttt{EXT\_SOURCE\_*}).
+    \item \textbf{Deep MLP} (0.7416) $\approx$ Shallow MLP (0.7405) — depth doesn't help.
+    \item Both NNs lag classic shallow learners by $\sim$1--2 AUC pts.
+  \end{itemize}
 
   \medskip
   \hp{Imbalance handling on the MLP}
@@ -219,7 +219,7 @@
   \hp{Limitations}
   \begin{itemize}
     \item Only main \texttt{application\_*.csv} tables  (auxiliary tables would add several AUC points).
-    \item Single train/val split (PredefinedSplit), not full $k$-fold CV.
+    \item Single train/val split, not full $k$-fold CV.
   \end{itemize}
 \end{frame}
 
