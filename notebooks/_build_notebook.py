@@ -18,7 +18,7 @@ def code(text):
 # =====================================================================
 md("""# Loan Default Prediction: Comparing Classic ML and Neural Networks under Class Imbalance
 
-**Team:** Minwoo Yoo · Nathan
+**Team:** Minwoo Yoo · Nathaniel Badalov
 **Dataset:** Home Credit Default Risk (Kaggle)
 
 This notebook is the **combined final report**. It walks through the full
@@ -1058,7 +1058,7 @@ nb.metadata = {
     },
 }
 
-out_file = 'final_project_minwoo.ipynb'
+out_file = 'final_project.ipynb'
 with open(out_file, 'w', encoding='utf-8') as f:
     nbf.write(nb, f)
 

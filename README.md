@@ -14,9 +14,9 @@ Predict the probability that a Home Credit applicant defaults on a loan (binary 
 
 | Model | Family | Owner | Imbalance handling |
 | :--- | :--- | :--- | :--- |
-| Logistic Regression  | Linear           | Nathan | `class_weight='balanced'` |
-| Random Forest        | Tree (bagging)   | Nathan | `class_weight='balanced'` |
-| HistGradientBoosting | Tree (boosting)  | Nathan | tuned hyperparameters    |
+| Logistic Regression  | Linear           | Nathaniel Badalov | `class_weight='balanced'` |
+| Random Forest        | Tree (bagging)   | Nathaniel Badalov | `class_weight='balanced'` |
+| HistGradientBoosting | Tree (boosting)  | Nathaniel Badalov | tuned hyperparameters    |
 | Shallow MLP `(64,)`         | Neural network | Minwoo | baseline / SMOTE / threshold tuning |
 | Deep MLP `(128, 64, 32)`    | Neural network | Minwoo | baseline / SMOTE / threshold tuning |
 
@@ -56,7 +56,7 @@ Imbalance comparison on the best MLP:
 │   ├── final_project_minwoo.ipynb   # neural-network track (this notebook)
 │   ├── pmlm_utilities_shallow.py    # course utility (mirrored from companion)
 │   └── _build_notebook.py           # script that regenerates the notebook
-├── Nathan/                          # classic-ML companion notebook + its CV results
+├── Nathaniel Badalov/                          # classic-ML companion notebook + its CV results
 ├── result/home_credit/              # CV CSVs, charts, Kaggle submission
 ├── slides/                          # final_presentation.pptx + builder + chart script
 ├── recording/script.md              # 8–10 min recording script

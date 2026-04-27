@@ -22,11 +22,13 @@
 \usepackage{tikz}
 \usepackage{appendixnumberbeamer}
 
-% --- color palette (matches our PowerPoint sample) ---
-\definecolor{navy}{HTML}{1F3A68}
-\definecolor{accent}{HTML}{2E86C1}
+% --- color palette (GWU brand colors) ---
+%   GWU primary blue:  #033C5A
+%   GWU buff gold:     #A99E5E
+\definecolor{navy}{HTML}{033C5A}
+\definecolor{accent}{HTML}{A99E5E}
 \definecolor{warn}{HTML}{C0392B}
-\definecolor{soft}{HTML}{ECF0F1}
+\definecolor{soft}{HTML}{F4F2EA}
 
 % --- override metropolis colors ---
 \setbeamercolor{normal text}{fg=black, bg=white}
@@ -36,13 +38,13 @@
 \setbeamercolor{section title}{fg=navy}
 \setbeamercolor{progress bar}{fg=accent, bg=soft}
 
-% --- speaker tag macro ---
-\newcommand{\speaker}[1]{\hfill\small\textit{\textcolor{accent}{#1}}}
+% --- speaker tag macro (DISABLED: speaker labels removed from slide titles) ---
+\newcommand{\speaker}[1]{}
 
 % --- title page ---
 \title{Loan Default Prediction}
 \subtitle{Comparing Classic ML and Neural Networks under Class Imbalance}
-\author{Minwoo Yoo \and Nathan}
+\author{Minwoo Yoo \and Nathaniel Badalov}
 \institute{Home Credit Default Risk · Kaggle}
 \date{}
 
@@ -54,7 +56,7 @@
 \maketitle
 
 % --------------------------- Slide 2 ---------------------------------
-\begin{frame}{Problem \& Motivation \speaker{Minwoo · 1 min}}
+\begin{frame}{Problem \& Motivation \speaker{Nathan · 1 min}}
   \textbf{The task}\par
   Predict the probability that a loan applicant defaults
   (binary, \texttt{TARGET}~$\in \{0, 1\}$).
@@ -72,7 +74,7 @@
 \end{frame}
 
 % --------------------------- Slide 3 ---------------------------------
-\begin{frame}{Dataset · Home Credit Default Risk \speaker{Minwoo · 1 min}}
+\begin{frame}{Dataset · Home Credit Default Risk \speaker{Nathan · 1 min}}
   \begin{columns}[T]
     \column{0.55\textwidth}
       \textbf{Size}
@@ -91,7 +93,7 @@
         \item Building-info columns 50--70\% missing
       \end{itemize}
     \column{0.43\textwidth}
-      \includegraphics[width=\linewidth]{../../result/home_credit/figure/class_balance.png}
+      \includegraphics[width=\linewidth]{../result/home_credit/figure/class_balance.png}
   \end{columns}
 \end{frame}
 
@@ -137,10 +139,10 @@
 \end{frame}
 
 % --------------------------- Slide 6 ---------------------------------
-\begin{frame}{Combined Validation ROC AUC \speaker{Nathan · 1 min}}
+\begin{frame}{Combined Validation ROC AUC \speaker{Minwoo · 1 min}}
   \begin{columns}[T]
     \column{0.62\textwidth}
-      \includegraphics[width=\linewidth]{../../result/home_credit/figure/model_auc_bar.png}
+      \includegraphics[width=\linewidth]{../result/home_credit/figure/model_auc_bar.png}
     \column{0.36\textwidth}
       \scriptsize
       \begin{tabular}{lc}
@@ -197,7 +199,7 @@
   \medskip\par
   \begin{columns}[T]
     \column{0.55\textwidth}
-      \includegraphics[width=\linewidth]{../../result/home_credit/figure/imbalance_compare.png}
+      \includegraphics[width=\linewidth]{../result/home_credit/figure/imbalance_compare.png}
     \column{0.42\textwidth}
       \normalsize
       \textbf{Headline}
@@ -211,7 +213,7 @@
 \end{frame}
 
 % --------------------------- Slide 9 ---------------------------------
-\begin{frame}{Conclusions \speaker{Both · 1 min}}
+\begin{frame}{Conclusions \speaker{Minwoo · 1 min}}
   \textbf{What we learned}
   \begin{itemize}\small
     \item Best: HistGradBoost at val ROC AUC = 0.7595; tree boosting wins by $\sim$1 AUC point.
