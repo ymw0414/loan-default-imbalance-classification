@@ -28,15 +28,12 @@
 \usepackage{microtype}
 
 % --- color palette (GWU brand) ---
-%   Primary navy:      #033C5A  (GW Blue, Pantone 295 C)
-%   Buff gold:         #AA9868  (GW Buff, Pantone 4515 C — slightly warmer)
-%   Athletic deep:     #00264C
-%   Soft cream:        #FBF8F0
 \definecolor{gwnavy}{HTML}{033C5A}
 \definecolor{gwbuff}{HTML}{AA9868}
 \definecolor{gwdeep}{HTML}{00264C}
 \definecolor{gwcream}{HTML}{FBF8F0}
 \definecolor{gwwarn}{HTML}{B73225}
+\definecolor{gwgrey}{HTML}{555555}
 
 % --- frame styling ---
 \setbeamercolor{normal text}{fg=black, bg=white}
@@ -45,10 +42,8 @@
 \setbeamercolor{subtitle}{fg=gwbuff}
 \setbeamercolor{itemize item}{fg=gwnavy}
 \setbeamercolor{itemize subitem}{fg=gwbuff}
-\setbeamercolor{section in toc}{fg=gwnavy}
 \setbeamerfont{frametitle}{series=\bfseries, size=\large}
 
-% Custom frame title bar (full-width navy bar with white text)
 \setbeamertemplate{frametitle}{%
   \nointerlineskip%
   \begin{beamercolorbox}[wd=\paperwidth, sep=0.45cm]{frametitle}%
@@ -56,12 +51,8 @@
   \end{beamercolorbox}%
 }
 
-% More breathing room between sections inside a slide
 \setlength{\parskip}{0.4em}
 \renewcommand{\arraystretch}{1.35}
-
-% Disable speaker tag (kept here for backward compatibility with the old script)
-\newcommand{\speaker}[1]{}
 
 % --- title page ---
 \title{Loan Default Prediction}
@@ -96,11 +87,18 @@
   (binary classification, \texttt{TARGET}~$\in \{0, 1\}$).
 
   \bigskip
-  \textbf{\color{gwnavy}\large Why class imbalance matters}
+  \textbf{\color{gwnavy}\large Why this matters}
   \begin{itemize}
-    \item Only $\sim$\textbf{8.07\%} of applicants default --- the data is severely imbalanced.
-    \item A "predict-no-default" baseline scores 92\% accuracy with \textbf{zero recall}.
-    \item Even a model with ROC AUC = 0.745 can classify \emph{zero} defaulters at the 0.5 threshold.
+    \item Lenders need accurate risk scoring to balance approval volume and credit losses.
+    \item False negatives (approving a bad loan) are far more costly than false positives.
+  \end{itemize}
+
+  \bigskip
+  \textbf{\color{gwnavy}\large Class imbalance challenge}
+  \begin{itemize}
+    \item Only $\sim$\textbf{8.07\%} of applicants default — the data is severely imbalanced.
+    \item A naive ``always predict no default'' baseline scores 92\% accuracy with \textbf{zero recall}.
+    \item Evaluating with accuracy alone is misleading; we use \textbf{ROC AUC} as the primary metric.
   \end{itemize}
 
   \bigskip
@@ -139,8 +137,8 @@
   \end{columns}
 \end{frame}
 
-% --------------------------- Slide 4 — Methodology ---------------------------
-\begin{frame}{Methodology · Shared Pipeline}
+% --------------------------- Slide 4 — Shared Pipeline ---------------------------
+\begin{frame}{Shared Pipeline}
   \textbf{\color{gwnavy}\large Preprocessing (identical for all five models)}
   \begin{itemize}
     \item \textbf{80/20 stratified} train--val split (\texttt{random\_state = 42})
@@ -158,34 +156,57 @@
   \end{itemize}
 \end{frame}
 
-% --------------------------- Slide 5 — Five Models ---------------------------
-\begin{frame}{Five Models Compared}
-  \vspace{0.3em}
+% --------------------------- Slide 5 — Nathan's Classic ML ---------------------------
+\begin{frame}{Classic ML Models}
+  \vspace{0.2em}
   \scriptsize
-  \begin{tabularx}{\linewidth}{@{}lllX@{}}
+  \begin{tabularx}{\linewidth}{@{}lXl@{}}
     \toprule
     \rowcolor{gwcream}
-    \textbf{Model} & \textbf{Family} & \textbf{Owner} & \textbf{Tuned hyperparameters} \\
+    \textbf{Model} & \textbf{Hyperparameters tuned} & \textbf{Val AUC} \\
     \midrule
-    Logistic Regression                 & Linear            & Nathaniel & \texttt{C}, \texttt{tol} \,\textbar\, \texttt{class\_weight=balanced} \\
-    Random Forest                       & Tree (bagging)    & Nathaniel & \texttt{n\_estimators}, \texttt{min\_samples\_*} \,\textbar\, \texttt{class\_weight=balanced} \\
-    HistGradientBoosting                & Tree (boosting)   & Nathaniel & \texttt{learning\_rate}, \texttt{max\_iter}, \texttt{min\_samples\_leaf} \\
-    Shallow MLP $-$ hidden $(64,)$        & Neural network    & Minwoo    & \texttt{alpha}, \texttt{learning\_rate\_init} \\
-    Deep MLP $-$ hidden $(128, 64, 32)$   & Neural network    & Minwoo    & \texttt{alpha}, \texttt{learning\_rate\_init} \\
+    \textbf{Logistic Regression}     & \texttt{C} $\in \{0.01, 0.1, 1, 10\}$, \texttt{tol} $\in \{10^{-5}, 10^{-4}, 10^{-3}\}$,\, \texttt{class\_weight=balanced} & 0.7487 \\
+    \textbf{Random Forest}           & \texttt{n\_estimators} $\in \{100, 200\}$, \texttt{min\_samples\_split} $\in \{2, 20, 100\}$, \texttt{min\_samples\_leaf} $\in \{1, 20, 100\}$,\, \texttt{class\_weight=balanced} & 0.7470 \\
+    \textbf{HistGradientBoosting}    & \texttt{learning\_rate} $\in \{0.01, 0.05, 0.1\}$, \texttt{max\_iter} $\in \{100, 200\}$, \texttt{min\_samples\_leaf} $\in \{20, 100\}$ & \textbf{0.7595} \\
     \bottomrule
   \end{tabularx}
 
-  \vspace{1.2em}
+  \vspace{1.0em}
   \normalsize
-  \textbf{\color{gwnavy}Why this lineup?}
+  \textbf{\color{gwnavy}Findings}
   \begin{itemize}\small
-    \item Spans the curriculum: linear $\to$ tree (bagging $+$ boosting) $\to$ shallow $+$ deep neural networks.
-    \item Same preprocessing, same train/val split, same scoring $\to$ \emph{fair} comparison.
+    \item \textbf{HistGradientBoosting} is the strongest classic learner — boosted trees usually dominate tabular credit data.
+    \item \textbf{Logistic Regression} (linear) with \texttt{class\_weight=balanced} is competitive — most signal is linear in $\texttt{EXT\_SOURCE\_*}$.
+    \item \textbf{Random Forest} overfits aggressively (train AUC 0.96 vs val 0.747) when \texttt{min\_samples\_leaf=1}; the regularized config wins.
   \end{itemize}
 \end{frame}
 
-% --------------------------- Slide 6 — Combined AUC ---------------------------
-\begin{frame}{Combined Validation ROC AUC}
+% --------------------------- Slide 6 — Minwoo's Neural Networks ---------------------------
+\begin{frame}{Neural Network Models}
+  \vspace{0.2em}
+  \scriptsize
+  \begin{tabularx}{\linewidth}{@{}lXl@{}}
+    \toprule
+    \rowcolor{gwcream}
+    \textbf{Architecture} & \textbf{Hyperparameters tuned} & \textbf{Val AUC} \\
+    \midrule
+    \textbf{Shallow MLP} -- hidden $(64,)$           & \texttt{alpha} $\in \{10^{-4}, 10^{-3}\}$, \texttt{learning\_rate\_init} $\in \{0.001, 0.005\}$, ReLU, Adam, early-stopping & 0.7405 \\
+    \textbf{Deep MLP} -- hidden $(128, 64, 32)$      & same grid as above & \textbf{0.7416} \\
+    \bottomrule
+  \end{tabularx}
+
+  \vspace{1.0em}
+  \normalsize
+  \textbf{\color{gwnavy}Findings}
+  \begin{itemize}\small
+    \item \textbf{Best for both:} $\alpha = 10^{-3}$, \texttt{lr\_init} $= 0.005$ — stronger L2 regularization wins.
+    \item \textbf{Depth doesn't help:} $0.7405$ vs $0.7416$ — a 0.001 difference, well within noise; tripling parameters bought nothing.
+    \item Both NNs land slightly \emph{below} the classic shallow learners — the bottleneck is the feature set, not the model class.
+  \end{itemize}
+\end{frame}
+
+% --------------------------- Slide 7 — Combined Leaderboard ---------------------------
+\begin{frame}{Combined Leaderboard}
   \begin{columns}[T,onlytextwidth]
     \column{0.62\textwidth}
       \vspace{0.4em}
@@ -209,45 +230,20 @@
 
       \vspace{1.2em}
       \normalsize
-      Tree boosting wins by $\sim$1 AUC point — consistent with the literature on tabular credit data.
+      Tree boosting wins by $\sim$1 AUC point — consistent with the literature on tabular data.
   \end{columns}
 \end{frame}
 
-% --------------------------- Slide 7 — Neural Network ---------------------------
-\begin{frame}{Neural Network Track}
-  \textbf{\color{gwnavy}\large Architecture}
-  \begin{itemize}\small
-    \item \textbf{Shallow MLP} — hidden $(64,)$ \quad $\sim$15.7K parameters
-    \item \textbf{Deep MLP} — hidden $(128, 64, 32)$ \quad $\sim$42K parameters
-    \item ReLU activation, Adam optimizer, \texttt{early\_stopping = True}
-  \end{itemize}
-
-  \bigskip
-  \textbf{\color{gwnavy}\large Hyperparameter tuning}
-  \begin{itemize}\small
-    \item \texttt{alpha} (L2 reg.) $\in \{10^{-4},\,10^{-3}\}$,\quad
-          \texttt{lr\_init} $\in \{0.001,\,0.005\}$
-    \item \textbf{Best} for both: $\alpha = 10^{-3}$, \texttt{lr} $= 0.005$
-  \end{itemize}
-
-  \bigskip
-  \textbf{\color{gwnavy}\large Findings}
-  \begin{itemize}\small
-    \item Shallow $0.7405$ \quad vs \quad Deep $0.7416$ \quad $\Rightarrow$ depth adds $\sim 0.001$ AUC (noise).
-    \item NN ranks 4th/5th overall — bottleneck is the \emph{feature set}, not the model.
-  \end{itemize}
-\end{frame}
-
-% --------------------------- Slide 8 — Imbalance Deep Dive ---------------------------
+% --------------------------- Slide 8 — Imbalance Handling ---------------------------
 \begin{frame}{Imbalance Handling on the Best MLP}
-  \vspace{0.3em}
+  \vspace{0.2em}
   \scriptsize
   \begin{tabular}{@{}lcccccc@{}}
     \toprule
     \rowcolor{gwcream}
     \textbf{Method} & \textbf{Threshold} & \textbf{ROC AUC} & \textbf{PR AUC} & \textbf{Precision} & \textbf{Recall} & \textbf{F1} \\
     \midrule
-    Baseline                 & 0.500 & 0.745 & 0.222 & 0.00          & 0.00          & 0.00 \\
+    Baseline                 & 0.500 & 0.745 & 0.222 & 0.00 & 0.00 & 0.00 \\
     SMOTE                    & 0.500 & {\color{gwwarn}\textbf{0.648}} & 0.134 & 0.16 & 0.21 & 0.18 \\
     \rowcolor{gwcream!50}
     Threshold tuning $\star$ & 0.164 & 0.745 & 0.222 & 0.24 & \textbf{0.40} & \textbf{0.30} \\
@@ -263,7 +259,7 @@
       \normalsize
       \textbf{\color{gwnavy}Headline}
       \begin{itemize}\small
-        \item Baseline: AUC 0.745, recall \textbf{0\%} (no prediction crosses 0.5).
+        \item Baseline: AUC 0.745 but recall \textbf{0\%} — no prediction crosses 0.5.
         \item SMOTE \textbf{hurts}: AUC dropped 0.10.
         \item Threshold tuning at 0.164 lifts recall to \textbf{40\%}.
       \end{itemize}
@@ -276,7 +272,7 @@
 \begin{frame}{Conclusions}
   \textbf{\color{gwnavy}\large What we learned}
   \begin{itemize}\small
-    \item \textbf{HistGradientBoosting} wins at val ROC AUC $= 0.7595$ — tree boosting takes the lead by $\sim$1 AUC point.
+    \item \textbf{HistGradientBoosting} wins overall at val ROC AUC $= 0.7595$ — tree boosting takes the lead by $\sim$1 AUC point.
     \item \textbf{Neural networks} tie LR and RF — depth alone does not unlock new performance on this tabular data.
     \item {\color{gwbuff}\textbf{Threshold tuning} on the MLP lifts recall from 0\% to 40\%; SMOTE hurt AUC.}
   \end{itemize}

@@ -928,7 +928,7 @@ best_mlp.fit(X_train_val, y_train_val)
 test_proba = best_mlp.predict_proba(X_test)[:, 1]
 
 submission = pd.DataFrame({'SK_ID_CURR': test_ids.values, 'TARGET': test_proba})
-out_path = result_dir + 'submission/submission_minwoo_mlp.csv'
+out_path = result_dir + 'submission/submission_mlp.csv'
 submission.to_csv(out_path, index=False)
 print('written:', out_path)
 submission.head()""")

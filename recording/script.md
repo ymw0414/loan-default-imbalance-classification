@@ -1,16 +1,14 @@
 # Recording Script — Final Presentation
 
-**Total target: 8–10 minutes  ·  10 slides  ·  Two presenters**
+**Total target: ~10 minutes  ·  10 slides  ·  Two presenters**
 
 | Speaker | Slides | Duration |
 | :--- | :--- | :--- |
-| **Nathaniel Badalov**  (front half) | 1, 2, 3, 4, 5 | ~5 min |
-| **Minwoo Yoo**  (back half)        | 6, 7, 8, 9    | ~5 min |
-| Joint                               | 10            | ~15 s   |
+| **Nathaniel Badalov**  (intro · data · classic ML) | 1, 2, 3, 4, 5 | ~5 min |
+| **Minwoo Yoo**  (NN · combined · imbalance · conclusion) | 6, 7, 8, 9 | ~5 min |
+| Joint                                              | 10           | ~15 s   |
 
 > All numbers below come from the actual notebook run on 2026-04-27.
-> If you re-run the notebook, refresh this script with the latest values
-> before recording.
 
 ---
 
@@ -27,20 +25,21 @@
 ## SLIDE 2 — Problem & Motivation  *(Nathaniel · 1:00)*
 
 > Lenders need to estimate the probability that an applicant will default,
-> so they can balance approval volume against credit losses. The Home
-> Credit dataset frames this as binary classification — predict
-> `TARGET = 1` if the applicant defaults, `0` otherwise.
+> so they can balance approval volume against credit losses. False
+> negatives — approving a borrower who later defaults — cost the full
+> unpaid principal, while denying a creditworthy borrower only forfeits
+> the interest margin. So the cost is asymmetric, and we need a model
+> that ranks applicants well.
 
-> The catch is that defaults are rare — only about **8 percent** of training
-> applicants actually default. That makes the data heavily imbalanced.
-> A naive "always predict no default" model would still score
-> 92 percent accuracy while being completely useless. As we'll see later,
-> even a trained MLP with a respectable ROC AUC of 0.745 ends up
-> classifying **zero** applicants as defaulters at the default 0.5 cutoff.
+> The catch is that defaults are rare — only about **8 percent** of
+> training applicants actually default. That makes the data heavily
+> imbalanced. A naive "always predict no default" model would still
+> score 92 percent accuracy while being completely useless. Because of
+> this, we evaluate using **ROC AUC** rather than raw accuracy.
 
-> So our central question is:
-> *Do classic shallow learners and neural networks respond differently to
-> class imbalance handling techniques?*
+> So our central question:
+> *Do classic shallow learners and neural networks respond differently
+> to class imbalance handling techniques?*
 
 ---
 
@@ -48,8 +47,7 @@
 
 > The training file has **307,511 applicants** described by 122 features.
 > The test set is another 48,744 applicants whose labels Kaggle keeps
-> hidden. Default rate in the training data is exactly the 8.07% I just
-> mentioned.
+> hidden. Default rate in training is exactly the 8.07% I just mentioned.
 
 > Three things stood out during EDA. First, the strongest predictors are
 > the three **EXT_SOURCE** columns — external credit scores — with
@@ -61,115 +59,119 @@
 
 ---
 
-## SLIDE 4 — Methodology · Shared Pipeline  *(Nathaniel · 1:00)*
+## SLIDE 4 — Shared Pipeline  *(Nathaniel · 1:00)*
 
 > Every model goes through the same preprocessing pipeline so the
 > comparison is fair. We do an 80/20 stratified train–val split with
-> random state 42 — that keeps the 8 percent positive rate identical in
-> both halves. We drop the SK_ID_CURR identifier, mean-impute numeric
-> NaNs, one-hot-encode the 16 categorical columns — bringing us to
-> **244 features** — and finally StandardScale every feature, which is
-> essential for Logistic Regression and the MLPs.
+> random state 42 — keeping the 8% positive rate identical in both
+> halves. We drop the SK_ID_CURR identifier, mean-impute numeric NaNs,
+> one-hot-encode the 16 categorical columns — bringing us up to **244
+> features** — and StandardScale every feature, which is essential for
+> Logistic Regression and the MLPs.
 
 > Hyperparameter tuning is done with `GridSearchCV` using sklearn's
-> `PredefinedSplit`, so each model gets exactly one train→val fold
-> instead of random k-fold. Our scoring metric is ROC AUC, the standard
-> for credit-risk ranking problems.
+> `PredefinedSplit`, so each model gets one train→val fold instead of
+> random k-fold. Our scoring metric is ROC AUC.
 
 ---
 
-## SLIDE 5 — Five Models Compared  *(Nathaniel · 1:30)*
+## SLIDE 5 — Classic ML Models  *(Nathaniel · 1:30)*
 
-> Here are the five models. I built the three classic shallow learners on
-> the left of the table — Logistic Regression and Random Forest, both
-> with `class_weight='balanced'`, and HistGradientBoosting which
-> doesn't accept that parameter. Minwoo built the two neural networks
-> on the right — a shallow MLP with one 64-unit hidden layer, and a deep
-> MLP with three hidden layers of 128, 64, and 32 units. Both NNs use
-> ReLU activations, the Adam optimizer, and early stopping.
+> I built three classic shallow learners covering the main tabular ML
+> families.
 
-> The reason for this lineup is to span the course curriculum — linear,
-> tree bagging, tree boosting, and shallow versus deep neural networks —
-> while keeping a clean comparison axis: same preprocessing, same
-> train/val split, same scoring metric.
+> **Logistic Regression** with `class_weight='balanced'`, tuned over
+> regularization strength `C` and tolerance `tol`. Best val AUC = 0.7487.
 
-> Now Minwoo will walk you through how the five models compared in
-> validation AUC.
+> **Random Forest**, also with `class_weight='balanced'`, tuned over the
+> number of trees, minimum samples per split, and minimum leaf size.
+> Best val AUC = 0.7470. One thing worth noting — when min_samples_leaf
+> is 1, train AUC reaches 0.96 while val stays at 0.747; that's a clear
+> overfitting signal, and the regularized config wins.
+
+> **HistGradientBoosting** — sklearn's fast gradient-boosted-tree
+> implementation, tuned over learning rate, number of iterations, and
+> minimum leaf size. Best val AUC = **0.7595** — the strongest of all
+> three classic models.
+
+> So gradient boosting wins among the classic learners, with linear
+> models surprisingly close behind. That's consistent with the
+> literature on tabular credit data, where boosted trees tend to
+> dominate.
+
+> *(Hand-off cue:)* Now Minwoo will walk you through the neural network
+> side.
 
 **[HAND-OFF TO MINWOO]**
 
 ---
 
-## SLIDE 6 — Combined Validation ROC AUC  *(Minwoo · 1:00)*
+## SLIDE 6 — Neural Network Models  *(Minwoo · 1:30)*
 
-> Thanks Nathaniel. Here's the combined leaderboard across all five
-> models. **HistGradientBoosting wins** with a validation ROC AUC of
-> **0.7595**, followed by Logistic Regression at 0.7487, Random Forest at
-> 0.7470, Deep MLP at 0.7416, and Shallow MLP at 0.7405. So gradient
-> boosting wins by about one AUC point — that's consistent with the
-> literature on tabular credit-risk problems, where boosted trees
-> typically beat neural networks.
+> Thanks Nathaniel. Let me walk through the neural-network side, which
+> is what I built. I trained two MLPs using sklearn's `MLPClassifier`.
 
-> Two quick observations. First, Random Forest's training AUC was 0.96
-> while its validation AUC was 0.747 — a clear sign of overfitting,
-> driven by the tuned leaf size of 1. Second, the neural networks
-> come in essentially tied with the linear and bagged-tree baselines,
-> which suggests that on this dataset the bottleneck is the feature
-> set, not the model class.
+> The **shallow MLP** has one hidden layer of 64 neurons — about 15
+> thousand parameters. The **deep MLP** has three hidden layers — 128,
+> 64, 32 — with about 42 thousand parameters, roughly three times as
+> many.
 
----
-
-## SLIDE 7 — Neural Network Track  *(Minwoo · 1:30)*
-
-> Let me zoom in on the neural-network side, which is what I built. The
-> shallow MLP has one hidden layer of 64 neurons — about 15 thousand
-> parameters. The deep MLP has three hidden layers — 128, 64, 32 — with
-> about 42 thousand parameters, roughly three times as many.
-
-> Hyperparameter tuning was over `alpha`, the L2 regularization strength,
-> and the initial Adam learning rate. The best setting for both
-> architectures turned out to be `alpha = 1e-3` and
-> `learning_rate_init = 0.005`.
+> Both used ReLU activations, the Adam optimizer, and `early_stopping`
+> so training halts automatically when validation loss stops improving.
+> I tuned over `alpha` — the L2 regularization strength — and the
+> initial Adam learning rate. The best for both turned out to be
+> `alpha = 1e-3` and `learning_rate_init = 0.005`.
 
 > The headline: shallow scored **0.7405**, deep scored **0.7416** — a
 > difference of 0.001 AUC, well within noise. Tripling the parameter
-> count bought us nothing. On this dataset, going deeper does **not**
-> help. The interpretation is straightforward: tabular data with mostly
-> hand-crafted features doesn't benefit from the kind of representation
-> learning neural networks excel at — the bottleneck really is the
-> feature set, not the model class.
+> count bought us essentially nothing. On this dataset, going deeper
+> does **not** help. Both NNs land slightly below Nathaniel's classic
+> shallow learners — the bottleneck is the feature set, not the model
+> class.
+
+---
+
+## SLIDE 7 — Combined Leaderboard  *(Minwoo · 1:00)*
+
+> Here's the combined leaderboard across all five models.
+> **HistGradientBoosting wins** at 0.7595 validation AUC, followed by
+> Logistic Regression at 0.7487, Random Forest at 0.7470, Deep MLP at
+> 0.7416, and Shallow MLP at 0.7405. Tree boosting wins by about one AUC
+> point — consistent with the literature on tabular data, where boosted
+> trees typically beat neural networks.
+
+> The neural networks finish essentially tied with the linear and
+> bagged-tree baselines. So the answer to "is more model capacity
+> better?" on this dataset is "no, not really".
 
 ---
 
 ## SLIDE 8 — Imbalance Handling Deep Dive  *(Minwoo · 1:30)*
 
-> But the most interesting part of the project was the **imbalance
-> handling comparison**. `MLPClassifier` doesn't accept `class_weight`,
-> so I compared three other strategies on the best MLP.
+> But the most interesting part of the project was the imbalance
+> handling comparison on the MLP. `MLPClassifier` doesn't accept
+> `class_weight`, so I compared three other strategies on the best NN.
 
-> **Strategy 1, baseline.** Train as is, classify at 0.5. The result is
-> striking — ROC AUC is 0.745, so the model has clearly learned a useful
-> probability ranking. But precision and recall are both **zero**.
-> Why? Because the model's probability outputs never cross 0.5 — at that
-> cutoff it predicts "no default" for every applicant. Useful ranker,
-> useless classifier.
+> **Strategy 1, baseline.** Train as is, classify at threshold 0.5.
+> ROC AUC is 0.745 — the model has clearly learned a useful probability
+> ranking. But precision and recall are both **zero**. Why? Because the
+> model's probability outputs never cross 0.5. Useful ranker, useless
+> classifier.
 
 > **Strategy 2, SMOTE oversampling.** Synthesize minority-class samples
-> by interpolating between existing default points until the training
-> set is 50/50, then re-train. Counterintuitively, this **hurt** the
-> model — ROC AUC dropped from 0.745 to 0.648, a loss of about 10 AUC
-> points.
+> until the training set is 50/50, then re-train. Counterintuitively,
+> this **hurt** the model — ROC AUC dropped from 0.745 to 0.648.
 
-> **Strategy 3, threshold tuning.** Keep the baseline model untouched,
-> but instead of using 0.5 sweep all thresholds and pick the one that
-> maximizes F1 on validation. That cutoff is **0.164**. Threshold tuning
-> preserves ROC AUC by construction, but it lifts recall from
-> **zero to 40 percent**, with precision around 0.24 and F1 of 0.30.
+> **Strategy 3, threshold tuning.** Keep the baseline model, but pick
+> the threshold that maximizes F1 on validation. That cutoff is
+> **0.164**. Threshold tuning preserves ROC AUC — the model is identical
+> — but it lifts recall from **zero to 40 percent**, with precision
+> around 0.24 and F1 of 0.30.
 
-> So the headline finding: **choosing the threshold matters more than
-> rebalancing the data.** SMOTE made things worse; threshold tuning
-> turned a useless classifier into one that catches four out of every
-> ten defaulters. That's the takeaway I'd like you to remember.
+> So the headline finding for the MLP is: **choosing the threshold
+> matters more than rebalancing the data.** SMOTE made things worse;
+> threshold tuning turned a useless classifier into one that catches
+> four out of every ten defaulters.
 
 ---
 
@@ -177,16 +179,16 @@
 
 > Three takeaways. First, HistGradientBoosting at 0.7595 AUC is the best
 > single model — tree boosting wins by about one AUC point. Second,
-> neural networks land essentially tied with Logistic Regression and
-> Random Forest; depth alone doesn't unlock new performance. Third, on
-> the MLP, threshold tuning is the right tool for imbalance — recall
-> jumped from 0% to 40%, while SMOTE actually moved AUC in the wrong
-> direction.
+> neural networks tie LR and Random Forest; depth alone doesn't unlock
+> new performance on this tabular data. Third, on the MLP, threshold
+> tuning is the right tool for imbalance — recall jumped from 0% to
+> 40%, while SMOTE actually moved AUC in the wrong direction.
 
 > Limitations: we only used the main `application_*.csv` tables.
-> Auxiliary tables — bureau, previous_application, installments — would
-> typically add several AUC points. And our PredefinedSplit is fast but
-> optimistic; full k-fold CV would tighten the confidence intervals.
+> Auxiliary tables — `bureau`, `previous_application`,
+> `installments_payments` — would typically add several AUC points.
+> And our PredefinedSplit is fast but optimistic; full k-fold CV would
+> tighten confidence intervals.
 
 ---
 
@@ -210,8 +212,8 @@ this slide.
 | 3     | Nathaniel | 1:00 |
 | 4     | Nathaniel | 1:00 |
 | 5     | Nathaniel | 1:30 |
-| 6     | Minwoo    | 1:00 |
-| 7     | Minwoo    | 1:30 |
+| 6     | Minwoo    | 1:30 |
+| 7     | Minwoo    | 1:00 |
 | 8     | Minwoo    | 1:30 |
 | 9     | Minwoo    | 0:45 |
 | 10    | Both      | 0:15 |
@@ -228,30 +230,17 @@ this slide.
 # Tips
 
 ## Pacing
-* **Slide 2** — let the "92% accuracy yet zero recall" line land. Don't rush.
-* **Slide 8** — the threshold-vs-SMOTE finding is the single most memorable
-  thing in the talk. Pause before the "choosing the threshold matters more
-  than rebalancing the data" line.
+* **Slide 5** — Nathaniel: 1:30 is enough to give each of the 3 models a
+  20-second beat, plus 30 seconds for findings. Don't rush the AUC numbers.
+* **Slide 8** — Minwoo: the threshold-vs-SMOTE finding is the single most
+  memorable thing in the talk. Pause before "*choosing the threshold matters
+  more than rebalancing the data.*"
 
-## Hand-off phrasing (built into the script above)
-* End of Slide 5 (Nathaniel): *"Now Minwoo will walk you through how the
-  five models compared in validation AUC."*
-* Start of Slide 6 (Minwoo): *"Thanks Nathaniel. Here's the combined
-  leaderboard..."*
-
-These verbal cues make the transition feel intentional rather than abrupt —
-important for a two-presenter recording.
-
-## Recording mechanics
-* **Record at 1080p, 16:9.** Use a headset mic; test levels first.
-* **Free options:** PowerPoint *Slide Show → Record*, Zoom (start a meeting
-  alone, "Record to this computer"), OBS Studio.
-* **NG handling:** if you stumble, pause, breathe, restart from the
-  *previous slide title* (clean cut point in editing). Most tools let you
-  re-record a single slide without redoing the whole deck.
-* **Upload as YouTube Unlisted** (not Public, not Private — the professor
-  has to be able to open it without an account). Paste the link into
-  Slide 10 before the final compile.
+## Hand-off phrasing (built into the script)
+* End of Slide 5 (Nathaniel): *"Now Minwoo will walk you through the neural
+  network side."*
+* Start of Slide 6 (Minwoo): *"Thanks Nathaniel. Let me walk through the
+  neural-network side, which is what I built."*
 
 ## Pre-recording checklist
 - [ ] Notebook executes cleanly end-to-end
