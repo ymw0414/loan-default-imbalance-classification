@@ -4,8 +4,9 @@
 **Slides: 10**
 **Speakers: Minwoo (M), Nathan (N)**
 
-> Numbers in `{{...}}` are placeholders to be replaced after the notebook
-> finishes running.
+> All numbers below are filled in from the actual notebook run on
+> 2026-04-27. If the notebook is re-executed, refresh this script with the
+> latest values before recording.
 
 ---
 
