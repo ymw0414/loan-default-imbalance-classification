@@ -29,6 +29,11 @@ PROJECT_ROOT = os.path.abspath(os.path.join(HERE, '..'))
 CV_DIR       = os.path.join(PROJECT_ROOT, 'result', 'home_credit', 'cv_results', 'GridSearchCV')
 COMBINED_CSV = os.path.join(PROJECT_ROOT, 'result', 'home_credit', 'combined_model_comparison.csv')
 IMBAL_CSV    = os.path.join(CV_DIR, 'imbalance_compare.csv')
+FIG_DIR      = os.path.join(PROJECT_ROOT, 'result', 'home_credit', 'figure')
+
+CHART_CLASS_BALANCE = os.path.join(FIG_DIR, 'class_balance.png')
+CHART_MODEL_AUC     = os.path.join(FIG_DIR, 'model_auc_bar.png')
+CHART_IMBALANCE     = os.path.join(FIG_DIR, 'imbalance_compare.png')
 
 OUT_PPTX = os.path.join(HERE, 'final_presentation.pptx')
 
@@ -210,20 +215,29 @@ def build():
     # ===================================================================
     s = prs.slides.add_slide(blank)
     add_section_title(s, 'Dataset · Home Credit Default Risk (Kaggle)')
-    tf = add_body_textbox(s)
+
+    # Left half: text bullets
+    tb = s.shapes.add_textbox(Inches(0.5), Inches(1.1), Inches(6.6), Inches(5.8))
+    tf = tb.text_frame
+    tf.word_wrap = True
     set_text(tf, 'Size', size=20, bold=True, color=TITLE_COLOR)
-    add_paragraph(tf, 'Train: 307,511 applicants × 122 features (102 numeric, 16 categorical, IDs, target)', size=16)
-    add_paragraph(tf, 'Test:   48,744 applicants (Kaggle hidden labels)', size=16)
+    add_paragraph(tf, 'Train: 307,511 applicants × 122 features', size=14)
+    add_paragraph(tf, 'Test: 48,744 applicants (labels held out by Kaggle)', size=14)
     add_paragraph(tf, '', bullet=False)
     set_text_p = add_paragraph
-    add_paragraph(tf, 'Class balance', size=20, bold=True, color=TITLE_COLOR, bullet=False)
-    add_paragraph(tf, 'TARGET = 1  (default):    24,825   ≈ 8.07%', size=16)
-    add_paragraph(tf, 'TARGET = 0  (no default): 282,686   ≈ 91.93%', size=16)
+    add_paragraph(tf, 'Severe class imbalance', size=20, bold=True, color=TITLE_COLOR, bullet=False)
+    add_paragraph(tf, 'Default rate ≈ 8.07% (24,825 / 307,511).', size=14)
+    add_paragraph(tf, 'Naive "all-zero" model = 92% accuracy / 0 recall.', size=14)
     add_paragraph(tf, '', bullet=False)
-    add_paragraph(tf, 'Key feature observations', size=20, bold=True, color=TITLE_COLOR, bullet=False)
-    add_paragraph(tf, 'EXT_SOURCE_1/2/3 (external credit scores) are the strongest predictors (|ρ| ≈ 0.16–0.18).', size=16)
-    add_paragraph(tf, 'DAYS_EMPLOYED has a sentinel value 365 243 in 18% of rows (not employed).', size=16)
-    add_paragraph(tf, 'Building-info columns are 50–70% missing — handled via mean imputation.', size=16)
+    add_paragraph(tf, 'Key feature signals', size=20, bold=True, color=TITLE_COLOR, bullet=False)
+    add_paragraph(tf, 'EXT_SOURCE_1/2/3 (external credit scores) are the strongest predictors (|ρ| ≈ 0.16–0.18).', size=14)
+    add_paragraph(tf, 'DAYS_EMPLOYED sentinel 365,243 flags 18% (unemployed).', size=14)
+    add_paragraph(tf, 'Building-info columns are 50–70% missing.', size=14)
+
+    # Right half: class balance chart
+    if os.path.exists(CHART_CLASS_BALANCE):
+        s.shapes.add_picture(CHART_CLASS_BALANCE, Inches(7.3), Inches(2.0),
+                             width=Inches(5.7))
 
     # ===================================================================
     # Slide 4: Research Question
@@ -289,47 +303,87 @@ def build():
     s = prs.slides.add_slide(blank)
     add_section_title(s, 'Results · Combined Validation AUC')
 
-    cmb_for_table = combined.copy()
-    cmb_for_table['best_val_AUC'] = cmb_for_table['best_val_AUC'].apply(fmt_score)
-    cmb_for_table['best_params'] = cmb_for_table['best_params'].fillna('TBD').apply(lambda x: x[:90] + '…' if isinstance(x, str) and len(x) > 90 else x)
-    add_table(s, cmb_for_table[['model', 'best_val_AUC', 'best_params']],
-              top=1.3, height=3.5,
-              col_widths_inches=[4.3, 1.6, 6.2])
+    if os.path.exists(CHART_MODEL_AUC):
+        # Chart on the left, brief table on the right
+        s.shapes.add_picture(CHART_MODEL_AUC, Inches(0.4), Inches(1.2), width=Inches(7.6))
 
-    tb = s.shapes.add_textbox(Inches(0.6), Inches(5.2), Inches(12.13), Inches(1.8))
-    tf = tb.text_frame
-    tf.word_wrap = True
-    set_text(tf, 'Highlights', size=18, bold=True, color=TITLE_COLOR)
-    add_paragraph(tf, f'Best model: {best_label}  (val ROC AUC = {best_auc}).', size=14)
-    add_paragraph(tf, 'Tree-boosting (HGBC) is competitive for tabular credit data, consistent with the literature.', size=14)
-    add_paragraph(tf, 'Neural networks reach a similar regime once features are scaled and the network has enough regularization.', size=14)
+        cmb_small = combined.copy()
+        cmb_small['best_val_AUC'] = cmb_small['best_val_AUC'].apply(fmt_score)
+        cmb_small = cmb_small[['model', 'best_val_AUC']]
+        cmb_small.columns = ['Model', 'AUC']
+        # truncate model labels for the right-side mini-table
+        cmb_small['Model'] = cmb_small['Model'].astype(str).str.replace(r'\s*\(.*\)$', '', regex=True)
+        add_table(s, cmb_small, top=1.4, left=8.3, width=4.7, height=3.0,
+                  col_widths_inches=[3.0, 1.7])
+
+        tb = s.shapes.add_textbox(Inches(0.5), Inches(5.6), Inches(12.3), Inches(1.6))
+        tf = tb.text_frame
+        tf.word_wrap = True
+        set_text(tf, f'Best model: {best_label}  (val ROC AUC = {best_auc})',
+                 size=18, bold=True, color=TITLE_COLOR)
+        add_paragraph(tf, 'Tree boosting (HGBC) is competitive on tabular credit data, in line with the literature.', size=14)
+        add_paragraph(tf, 'Neural networks reach a similar regime once features are scaled and regularized.', size=14)
+    else:
+        cmb_for_table = combined.copy()
+        cmb_for_table['best_val_AUC'] = cmb_for_table['best_val_AUC'].apply(fmt_score)
+        cmb_for_table['best_params']  = cmb_for_table['best_params'].fillna('TBD').apply(
+            lambda x: x[:90] + '…' if isinstance(x, str) and len(x) > 90 else x
+        )
+        add_table(s, cmb_for_table[['model', 'best_val_AUC', 'best_params']],
+                  top=1.3, height=3.5,
+                  col_widths_inches=[4.3, 1.6, 6.2])
+
+        tb = s.shapes.add_textbox(Inches(0.6), Inches(5.2), Inches(12.13), Inches(1.8))
+        tf = tb.text_frame
+        tf.word_wrap = True
+        set_text(tf, 'Highlights', size=18, bold=True, color=TITLE_COLOR)
+        add_paragraph(tf, f'Best model: {best_label}  (val ROC AUC = {best_auc}).', size=14)
+        add_paragraph(tf, 'Tree boosting (HGBC) is competitive for tabular credit data, consistent with the literature.', size=14)
+        add_paragraph(tf, 'Neural networks reach a similar regime once features are scaled and regularized.', size=14)
 
     # ===================================================================
     # Slide 8: Imbalance Handling Deep Dive (MLP)
     # ===================================================================
     s = prs.slides.add_slide(blank)
     add_section_title(s, 'Imbalance Handling on the Best MLP')
+
     if imbalance is not None and len(imbalance) > 0:
         tbl_df = imbalance[['method', 'threshold', 'ROC_AUC', 'PR_AUC', 'precision', 'recall', 'F1']]
-        add_table(s, tbl_df, top=1.3, height=2.5,
-                  col_widths_inches=[1.8, 1.4, 1.6, 1.6, 1.6, 1.6, 2.5])
+        add_table(s, tbl_df, top=1.2, height=1.8,
+                  col_widths_inches=[1.6, 1.3, 1.5, 1.5, 1.6, 1.5, 2.3])
+
+        if os.path.exists(CHART_IMBALANCE):
+            s.shapes.add_picture(CHART_IMBALANCE, Inches(0.4), Inches(3.2), width=Inches(7.4))
+
+        # Right-side commentary (or below if no chart)
+        if os.path.exists(CHART_IMBALANCE):
+            tb = s.shapes.add_textbox(Inches(8.1), Inches(3.2), Inches(4.9), Inches(3.8))
+        else:
+            tb = s.shapes.add_textbox(Inches(0.6), Inches(3.4), Inches(12.13), Inches(3.6))
+        tf = tb.text_frame
+        tf.word_wrap = True
+        set_text(tf, 'Three handling strategies', size=16, bold=True, color=TITLE_COLOR)
+        add_paragraph(tf, 'Baseline — original 8/92 split, classify at 0.5.', size=12)
+        add_paragraph(tf, 'SMOTE — oversample minority to 50/50 (train only).', size=12)
+        add_paragraph(tf, 'Threshold tuning — pick the threshold maximizing F1 on val.', size=12)
+        add_paragraph(tf, '', bullet=False)
+        add_paragraph(tf, 'Reading the chart', size=16, bold=True, color=TITLE_COLOR, bullet=False)
+        add_paragraph(tf, 'Threshold tuning swaps precision for recall.', size=12)
+        add_paragraph(tf, 'SMOTE typically lifts recall but can hurt precision.', size=12)
+        add_paragraph(tf, 'ROC AUC barely moves — the model already produces a good ranking.', size=12)
     else:
         tb = s.shapes.add_textbox(Inches(0.6), Inches(1.3), Inches(12.13), Inches(1.0))
         set_text(tb.text_frame,
                  '<<TBD — fill after notebook completes>>',
                  size=18, color=GREY)
 
-    tb = s.shapes.add_textbox(Inches(0.6), Inches(4.0), Inches(12.13), Inches(3.0))
-    tf = tb.text_frame
-    tf.word_wrap = True
-    set_text(tf, 'Three handling strategies (sklearn MLPClassifier does not support class_weight)', size=18, bold=True, color=TITLE_COLOR)
-    add_paragraph(tf, 'Baseline — train on the original imbalanced data; classify at 0.5.', size=14)
-    add_paragraph(tf, 'SMOTE — synthesize minority samples until 50/50 in training only; classify at 0.5.', size=14)
-    add_paragraph(tf, 'Threshold tuning — keep the baseline model, choose the threshold that maximizes F1 on validation.', size=14)
-    add_paragraph(tf, '', bullet=False)
-    add_paragraph(tf, 'Reading the table', size=18, bold=True, color=TITLE_COLOR, bullet=False)
-    add_paragraph(tf, 'Threshold tuning trades precision for recall (ROC AUC unchanged by definition).', size=14)
-    add_paragraph(tf, 'SMOTE typically improves recall but can hurt precision.', size=14)
+        tb = s.shapes.add_textbox(Inches(0.6), Inches(3.0), Inches(12.13), Inches(3.0))
+        tf = tb.text_frame
+        tf.word_wrap = True
+        set_text(tf, 'Three handling strategies (sklearn MLPClassifier does not support class_weight)', size=18, bold=True, color=TITLE_COLOR)
+        add_paragraph(tf, 'Baseline — train on the original imbalanced data; classify at 0.5.', size=14)
+        add_paragraph(tf, 'SMOTE — synthesize minority samples until 50/50 in training only; classify at 0.5.', size=14)
+        add_paragraph(tf, 'Threshold tuning — keep the baseline model, choose the threshold that maximizes F1 on validation.', size=14)
 
     # ===================================================================
     # Slide 9: Conclusions
@@ -338,17 +392,16 @@ def build():
     add_section_title(s, 'Conclusions')
     tf = add_body_textbox(s)
     set_text(tf, 'What we learned', size=20, bold=True, color=TITLE_COLOR)
-    add_paragraph(tf, f'Best model overall: {best_label} (val ROC AUC = {best_auc}).', size=16)
-    add_paragraph(tf, 'Gradient boosting (HGBC) tends to outperform both linear and neural networks on this tabular task.', size=16)
-    add_paragraph(tf, 'Neural networks need feature scaling AND regularization (alpha) to compete; deeper is not automatically better.', size=16)
-    add_paragraph(tf, 'Imbalance handling on the MLP shifts precision↔recall but does not move ROC AUC much — the model already learns a useful ranking.', size=16)
+    add_paragraph(tf, f'Best model: {best_label} at val ROC AUC = {best_auc}; tree boosting wins by about 1 AUC point.', size=15)
+    add_paragraph(tf, 'Neural networks tie Logistic Regression and Random Forest — bottleneck is the feature set, not the model.', size=15)
+    add_paragraph(tf, 'Shallow MLP (0.7405) ≈ Deep MLP (0.7416): going deeper does not help on this tabular data.', size=15)
+    add_paragraph(tf, 'Most actionable finding: at 0.5 threshold the MLP has zero recall — *choosing the threshold matters more than resampling.*', size=15, bold=True)
+    add_paragraph(tf, 'SMOTE actually hurt this MLP (AUC 0.745 → 0.648); threshold tuning preserved AUC and lifted recall to 40 %.', size=15)
     add_paragraph(tf, '', bullet=False)
-    set_text_p(tf, 'Limitations', size=20, bold=True, color=TITLE_COLOR, bullet=False)
-    add_paragraph(tf, 'Only the main application_*.csv tables are used; the bureau / previous_application tables would likely add several AUC points.', size=16)
-    add_paragraph(tf, 'PredefinedSplit is fast but optimistic; full k-fold CV would give tighter confidence intervals.', size=16)
-    add_paragraph(tf, '', bullet=False)
-    set_text_p(tf, 'Future work', size=20, bold=True, color=TITLE_COLOR, bullet=False)
-    add_paragraph(tf, 'Integrate auxiliary tables; ensemble HGBC and the best MLP; calibrate probabilities (Platt or isotonic).', size=16)
+    set_text_p(tf, 'Limitations & future work', size=20, bold=True, color=TITLE_COLOR, bullet=False)
+    add_paragraph(tf, 'Only the main application_*.csv tables used — auxiliary tables (bureau, previous_application) typically add several AUC points.', size=14)
+    add_paragraph(tf, 'PredefinedSplit is fast but optimistic; k-fold CV would tighten the confidence intervals.', size=14)
+    add_paragraph(tf, 'Next steps: integrate auxiliary tables; ensemble HGBC + best MLP; calibrate probabilities (Platt / isotonic).', size=14)
 
     # ===================================================================
     # Slide 10: Q&A / Recording link

@@ -102,48 +102,59 @@
 ## Slide 7 — Results (Nathan, ~60 s)
 
 > This is the combined leaderboard across all five models. The best result
-> was {{BEST_MODEL}} with a validation ROC AUC of {{BEST_AUC}}. Histogram
-> Gradient Boosting performs strongly — that's consistent with the literature
-> on tabular credit-risk problems, where boosted trees usually win. The
-> neural networks come in close behind once they're properly scaled and
-> regularized.
+> was Histogram Gradient Boosting at validation ROC AUC of 0.7595, followed
+> by Logistic Regression at 0.7487, Random Forest at 0.7470, Deep MLP at
+> 0.7416, and Shallow MLP at 0.7405. So gradient boosting wins by about one
+> AUC point — that's consistent with the literature on tabular credit-risk
+> problems, where boosted trees usually beat neural networks.
 
 > One thing worth pointing out: Random Forest's training AUC was 0.96 while
-> its validation AUC was around 0.747 — that's a clear sign of overfitting,
-> which the trained leaf size of 1 makes obvious in the grid.
+> its validation AUC was 0.747 — a clear sign of overfitting, driven by the
+> tuned leaf size of 1. And the neural networks come in essentially tied
+> with the linear and bagged-tree baselines, which suggests that on this
+> dataset the bottleneck is the feature set, not the model class.
 
 ---
 
 ## Slide 8 — Imbalance Handling Deep-Dive (Minwoo, ~60 s)
 
-> sklearn's MLPClassifier doesn't accept class_weight, so for the imbalance
-> deep-dive I compare three techniques on the best MLP architecture.
+> For the imbalance deep-dive I take the best MLP and compare three handling
+> techniques. Note that sklearn's MLPClassifier doesn't accept class_weight,
+> so we cannot directly compare class-weighted training the way Nathan did
+> with Logistic Regression and Random Forest.
 
-> Baseline trains on the original imbalanced data and classifies at 0.5.
-> SMOTE synthesizes minority-class samples until the training set is 50/50,
-> then trains the same MLP. Threshold tuning keeps the baseline model and
-> instead picks the decision threshold that maximizes F1 on the validation
-> set.
+> Baseline classifies at the default 0.5 threshold. The result is striking:
+> ROC AUC is 0.745, but precision and recall are both zero — at the 0.5
+> cutoff, the MLP doesn't push any prediction high enough to flag a single
+> default. So the model has actually learned a useful ranking, but the
+> default decision threshold is wrong for an 8 % positive rate.
 
-> The story in the table is: ROC AUC barely moves between methods —
-> threshold tuning literally cannot change ROC AUC, and SMOTE here gives
-> {{SMOTE_DELTA}} compared to baseline. What does change is the precision /
-> recall trade-off — threshold tuning at {{BEST_THRESHOLD}} pushes recall
-> from {{BASELINE_RECALL}} up to {{TUNED_RECALL}} at the cost of precision
-> dropping from {{BASELINE_PRECISION}} to {{TUNED_PRECISION}}. Whether that's
-> a good trade depends on the lender's cost of a false negative.
+> SMOTE oversampling counterintuitively makes things worse — ROC AUC drops
+> from 0.745 to 0.648. The synthetic samples seem to confuse the MLP rather
+> than help it.
+
+> Threshold tuning is the clear winner. Same model as baseline, but we pick
+> the decision cutoff that maximizes F1 on validation — that turns out to be
+> 0.164. ROC AUC stays at 0.745 (it's the same probability scores), but
+> precision goes from 0 to 0.24 and recall from 0 to 0.40. So for an
+> imbalanced problem like this, *picking the right threshold* matters more
+> than *fixing the class balance during training*.
 
 ---
 
 ## Slide 9 — Conclusions (Minwoo, ~50 s)
 
-> A few takeaways. First, Histogram Gradient Boosting is the best single
-> model on this dataset, which fits the broader observation that tree
-> boosting dominates tabular problems. Second, neural networks need
-> StandardScaling and regularization to be competitive — and going deeper is
-> not automatically better. Third, on the MLP, imbalance handling shifts the
-> precision-recall trade-off but does not move ROC AUC much, because the
-> model already learns a useful probability ranking.
+> Three takeaways. First, Histogram Gradient Boosting is the best single
+> model at 0.7595 AUC, beating both linear and neural networks by about one
+> AUC point — consistent with the literature on tabular data. Second, our
+> neural networks land essentially tied with Logistic Regression and Random
+> Forest, which suggests that on this dataset the bottleneck is the feature
+> set rather than the model class. Going from a shallow MLP to a deep MLP
+> moves AUC by 0.001 — basically noise. Third, the most actionable lesson
+> from the imbalance comparison is that *threshold matters more than
+> resampling*: keeping the baseline model and just choosing a sensible
+> threshold turned a 0-recall classifier into one that catches 40 % of
+> defaults.
 
 > Limitations: we only used the main application_train and application_test
 > tables. The auxiliary tables — bureau, previous_application, installments —

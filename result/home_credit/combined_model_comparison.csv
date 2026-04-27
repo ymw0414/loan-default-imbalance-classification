@@ -1,0 +1,6 @@
+model,best_val_AUC,best_params
+HistGradBoost (Nathan),0.7595,"{'model__learning_rate': 0.05, 'model__max_iter': 200, 'model__min_samples_leaf': 100}"
+Logistic Regression (Nathan),0.7487,"{'model__C': 0.1, 'model__tol': 1e-05}"
+Random Forest (Nathan),0.747,"{'model__min_samples_leaf': 1, 'model__min_samples_split': 100, 'model__n_estimators': 200}"
+Deep MLP (Minwoo),0.7416,"{'model__alpha': 0.001, 'model__learning_rate_init': 0.005}"
+Shallow MLP (Minwoo),0.7405,"{'model__alpha': 0.001, 'model__learning_rate_init': 0.005}"
