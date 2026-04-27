@@ -392,15 +392,8 @@ Tree-based models still outperform deep learning on tabular data
     \item HGBC wins (val AUC $=$ \hi{0.7595}) — tree boosting captures feature interactions
     \item Neural networks don't help on this tabular data — both MLPs lag classic shallow learners by $\sim$1--2 AUC pts
     \item Even depth doesn't rescue NN: Deep MLP $\approx$ Shallow MLP (within noise)
+    \item For MLP imbalance: \emph{threshold tuning} $>$ SMOTE — recall \hi{0\% $\to$ 41\%}; the MLP cannot use \texttt{class\_weight} like LR / RF
 \end{itemize}
-
-\vspace{0.3cm}
-
-\begin{block}{Answer to the research question}
-Classic ML and NN respond differently to imbalance handling: LR / RF use
-\texttt{class\_weight='balanced'} directly in the loss, while the MLP cannot
-and must rely on \emph{threshold tuning} instead.
-\end{block}
 
 \end{frame}
 
