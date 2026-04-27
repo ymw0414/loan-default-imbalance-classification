@@ -5,6 +5,8 @@ data/*.csv
 data/*.zip
 data/*.parquet
 data/*.feather
+Nathan/*.zip
+Nathan/drive-download-*
 
 # ============================================================
 # Recordings & large media (host externally; embed link in slides)
