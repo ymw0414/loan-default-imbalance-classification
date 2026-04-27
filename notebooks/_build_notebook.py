@@ -29,7 +29,7 @@ imbalance handling.
 
 **Authorship of each section is marked inline.** The classic-ML hyperparameter
 tuning was driven by Nathaniel Badalov; the neural-network hyperparameter tuning and
-the imbalance-handling deep dive were driven by Minwoo. EDA, preprocessing,
+the imbalance-handling deep dive were driven by Minwoo Yoo. EDA, preprocessing,
 combined results and the conclusion were written jointly.""")
 
 md("""## Introduction
@@ -508,11 +508,11 @@ code("""classic_leaderboard = pd.DataFrame(
 classic_leaderboard""")
 
 # =====================================================================
-# 5. Hyperparameter Tuning - Neural Networks  (Minwoo)
+# 5. Hyperparameter Tuning - Neural Networks  (Minwoo Yoo)
 # =====================================================================
 md("""# Hyperparameter Tuning -- Neural Networks
 
-> **Author:** Minwoo
+> **Author:** Minwoo Yoo
 >
 > Two architectures, both implemented with `sklearn.neural_network.MLPClassifier`.
 
@@ -899,7 +899,7 @@ recent meta-analyses arguing against routine oversampling for properly
 calibrated models.""")
 
 # =====================================================================
-# 7. Combined Results (Nathaniel Badalov + Minwoo)
+# 7. Combined Results (Nathaniel Badalov + Minwoo Yoo)
 # =====================================================================
 md("""# Combined Results: Classic ML + Neural Networks
 
@@ -919,8 +919,8 @@ for fname, model_label in [
     ('lr.csv',           'Logistic Regression (Nathaniel Badalov)'),
     ('rfc.csv',          'Random Forest (Nathaniel Badalov)'),
     ('hgbc.csv',         'HistGradBoost (Nathaniel Badalov)'),
-    ('shallow_mlp.csv',  'Shallow MLP (Minwoo)'),
-    ('deep_mlp.csv',     'Deep MLP (Minwoo)'),
+    ('shallow_mlp.csv',  'Shallow MLP (Minwoo Yoo)'),
+    ('deep_mlp.csv',     'Deep MLP (Minwoo Yoo)'),
 ]:
     p = cv_path + fname
     if os.path.exists(p):
@@ -992,8 +992,8 @@ the available data cannot fill.
 | 1 | HistGradientBoosting | 0.7595 | Nathaniel Badalov |
 | 2 | Logistic Regression  | 0.7487 | Nathaniel Badalov |
 | 3 | Random Forest        | 0.7470 | Nathaniel Badalov |
-| 4 | Deep MLP             | 0.7416 | Minwoo |
-| 5 | Shallow MLP          | 0.7405 | Minwoo |
+| 4 | Deep MLP             | 0.7416 | Minwoo Yoo |
+| 5 | Shallow MLP          | 0.7405 | Minwoo Yoo |
 
 The neural networks rank **last** in the leaderboard -- about 2 AUC
 points behind HGBC and on par with Logistic Regression. This matches the

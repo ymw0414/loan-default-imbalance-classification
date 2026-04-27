@@ -99,14 +99,14 @@
 > literature on tabular credit data, where boosted trees tend to
 > dominate.
 
-> *(Hand-off cue:)* Now Minwoo will walk you through the neural network
+> *(Hand-off cue:)* Now Minwoo Yoo will walk you through the neural network
 > side.
 
 **[HAND-OFF TO MINWOO]**
 
 ---
 
-## SLIDE 6 — Neural Network Models  *(Minwoo · 1:30)*
+## SLIDE 6 — Neural Network Models  *(Minwoo Yoo · 1:30)*
 
 > Thanks Nathaniel. Let me walk through the neural-network side, which
 > is what I built. I trained two MLPs using sklearn's `MLPClassifier`.
@@ -131,7 +131,7 @@
 
 ---
 
-## SLIDE 7 — Combined Leaderboard  *(Minwoo · 1:00)*
+## SLIDE 7 — Combined Leaderboard  *(Minwoo Yoo · 1:00)*
 
 > Here's the combined leaderboard across all five models.
 > **HistGradientBoosting wins** at 0.7595 validation AUC, followed by
@@ -146,7 +146,7 @@
 
 ---
 
-## SLIDE 8 — Imbalance Handling Deep Dive  *(Minwoo · 1:30)*
+## SLIDE 8 — Imbalance Handling Deep Dive  *(Minwoo Yoo · 1:30)*
 
 > But the most interesting part of the project was the imbalance
 > handling comparison on the MLP. `MLPClassifier` doesn't accept
@@ -175,7 +175,7 @@
 
 ---
 
-## SLIDE 9 — Conclusions  *(Minwoo · 0:45)*
+## SLIDE 9 — Conclusions  *(Minwoo Yoo · 0:45)*
 
 > Three takeaways. First, HistGradientBoosting at 0.7595 AUC is the best
 > single model — tree boosting wins by about one AUC point. Second,
@@ -194,7 +194,7 @@
 
 ## SLIDE 10 — Closing  *(Both · 0:15)*
 
-**Minwoo:** Thanks for watching.
+**Minwoo Yoo:** Thanks for watching.
 
 **Nathaniel:** The recording link, our GitHub, and team info are on
 this slide.
@@ -212,10 +212,10 @@ this slide.
 | 3     | Nathaniel | 1:00 |
 | 4     | Nathaniel | 1:00 |
 | 5     | Nathaniel | 1:30 |
-| 6     | Minwoo    | 1:30 |
-| 7     | Minwoo    | 1:00 |
-| 8     | Minwoo    | 1:30 |
-| 9     | Minwoo    | 0:45 |
+| 6     | Minwoo Yoo    | 1:30 |
+| 7     | Minwoo Yoo    | 1:00 |
+| 8     | Minwoo Yoo    | 1:30 |
+| 9     | Minwoo Yoo    | 0:45 |
 | 10    | Both      | 0:15 |
 | **Total** |       | **10:00** |
 
@@ -232,14 +232,14 @@ this slide.
 ## Pacing
 * **Slide 5** — Nathaniel: 1:30 is enough to give each of the 3 models a
   20-second beat, plus 30 seconds for findings. Don't rush the AUC numbers.
-* **Slide 8** — Minwoo: the threshold-vs-SMOTE finding is the single most
+* **Slide 8** — Minwoo Yoo: the threshold-vs-SMOTE finding is the single most
   memorable thing in the talk. Pause before "*choosing the threshold matters
   more than rebalancing the data.*"
 
 ## Hand-off phrasing (built into the script)
-* End of Slide 5 (Nathaniel): *"Now Minwoo will walk you through the neural
+* End of Slide 5 (Nathaniel): *"Now Minwoo Yoo will walk you through the neural
   network side."*
-* Start of Slide 6 (Minwoo): *"Thanks Nathaniel. Let me walk through the
+* Start of Slide 6 (Minwoo Yoo): *"Thanks Nathaniel. Let me walk through the
   neural-network side, which is what I built."*
 
 ## Pre-recording checklist
