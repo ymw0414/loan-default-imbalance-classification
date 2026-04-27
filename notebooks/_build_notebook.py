@@ -1,6 +1,6 @@
 """
 Builder script that constructs the final project notebook.
-Run this once: `python _build_notebook.py` -> creates final_project_minwoo.ipynb
+Run this once: `python _build_notebook.py` -> creates final_project.ipynb
 """
 import nbformat as nbf
 
@@ -28,7 +28,7 @@ neural networks, and a focused study of how each family responds to class
 imbalance handling.
 
 **Authorship of each section is marked inline.** The classic-ML hyperparameter
-tuning was driven by Nathan; the neural-network hyperparameter tuning and
+tuning was driven by Nathaniel Badalov; the neural-network hyperparameter tuning and
 the imbalance-handling deep dive were driven by Minwoo. EDA, preprocessing,
 combined results and the conclusion were written jointly.""")
 
@@ -104,7 +104,7 @@ code("""random_seed = 42""")
 md("""## Paths
 
 The notebook expects to be run from `final_project/notebooks/`. Data lives in
-`../data/`. Result CSVs and submission file mirror Nathan's directory layout
+`../data/`. Result CSVs and submission file mirror Nathaniel Badalov's directory layout
 (`../result/home_credit/...`).""")
 
 code("""import os
@@ -392,11 +392,11 @@ X_test  = ss.transform(X_test)
 print('after scaling -- mean:', X_train.mean().round(4), '  std:', X_train.std().round(4))""")
 
 # =====================================================================
-# 4. Hyperparameter Tuning -- Classic ML  (Nathan)
+# 4. Hyperparameter Tuning -- Classic ML  (Nathaniel Badalov)
 # =====================================================================
 md("""# Hyperparameter Tuning -- Classic ML
 
-> **Author:** Nathan
+> **Author:** Nathaniel Badalov
 >
 > Three classic shallow learners compared: Logistic Regression (linear),
 > Random Forest (tree bagging), and HistGradientBoosting (tree boosting).
@@ -425,7 +425,7 @@ print('combined train+val:', X_train_val.shape)""")
 
 md("""## Hyperparameter grids
 
-Same grids Nathan used in his standalone notebook. Random Forest is the slowest
+Same grids Nathaniel Badalov used in his standalone notebook. Random Forest is the slowest
 of the three (full grid takes ~10 minutes); a smart-skip block below loads
 existing CSVs from disk if they're already there to avoid re-running.""")
 
@@ -869,11 +869,11 @@ recent meta-analyses arguing against routine oversampling for properly
 calibrated models.""")
 
 # =====================================================================
-# 7. Combined Results (Nathan + Minwoo)
+# 7. Combined Results (Nathaniel Badalov + Minwoo)
 # =====================================================================
 md("""# Combined Results: Classic ML + Neural Networks
 
-Loads Nathan's `GridSearchCV` CSVs (LR / RF / HGBC) and merges them with the
+Loads Nathaniel Badalov's `GridSearchCV` CSVs (LR / RF / HGBC) and merges them with the
 two MLP results from this notebook. This gives the full **5-model comparison**
 that we present in the final slides.""")
 
@@ -886,9 +886,9 @@ cv_path = result_dir + 'cv_results/GridSearchCV/'
 
 rows = []
 for fname, model_label in [
-    ('lr.csv',           'Logistic Regression (Nathan)'),
-    ('rfc.csv',          'Random Forest (Nathan)'),
-    ('hgbc.csv',         'HistGradBoost (Nathan)'),
+    ('lr.csv',           'Logistic Regression (Nathaniel Badalov)'),
+    ('rfc.csv',          'Random Forest (Nathaniel Badalov)'),
+    ('hgbc.csv',         'HistGradBoost (Nathaniel Badalov)'),
     ('shallow_mlp.csv',  'Shallow MLP (Minwoo)'),
     ('deep_mlp.csv',     'Deep MLP (Minwoo)'),
 ]:
@@ -958,9 +958,9 @@ the available data cannot fill.
 
 | Rank | Model | Best val ROC AUC | Owner |
 |---|---|---|---|
-| 1 | HistGradientBoosting | 0.7595 | Nathan |
-| 2 | Logistic Regression  | 0.7487 | Nathan |
-| 3 | Random Forest        | 0.7470 | Nathan |
+| 1 | HistGradientBoosting | 0.7595 | Nathaniel Badalov |
+| 2 | Logistic Regression  | 0.7487 | Nathaniel Badalov |
+| 3 | Random Forest        | 0.7470 | Nathaniel Badalov |
 | 4 | Deep MLP             | 0.7416 | Minwoo |
 | 5 | Shallow MLP          | 0.7405 | Minwoo |
 
@@ -1001,7 +1001,7 @@ factors plausibly drive the gap on this dataset:
 
 md("""# Conclusion
 
-**Best model overall.** Histogram Gradient Boosting (Nathan's notebook)
+**Best model overall.** Histogram Gradient Boosting (Nathaniel Badalov's notebook)
 takes the top spot at validation ROC AUC = 0.7595. Among the neural
 networks, the Deep MLP barely edges the Shallow MLP (0.7416 vs 0.7405),
 and both lag the classic shallow learners by ~1–2 AUC points.
