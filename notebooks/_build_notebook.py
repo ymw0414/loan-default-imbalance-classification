@@ -25,23 +25,56 @@ Gradient Boosting) so that results across the two notebooks are directly compara
 
 md("""## Introduction
 
-This project predicts the probability that a loan applicant will default
-(`TARGET = 1`) using the publicly available Kaggle *Home Credit Default Risk*
-dataset. The training set contains 307,511 applications with 122 features and
-is heavily **imbalanced** -- only ~8% of applicants default.
+### Business problem
+Consumer lenders need to estimate, before granting a loan, the probability
+that the applicant will fail to repay it. Misjudging this probability is
+asymmetric: approving a borrower who later defaults costs the full unpaid
+principal, while denying a creditworthy borrower only forfeits the interest
+margin. Models that **rank** applicants well let lenders set a sensible
+approval threshold and trade off these two costs explicitly.
+
+### Dataset
+We use the publicly available Kaggle *Home Credit Default Risk* dataset.
+The training file contains 307,511 applications with 122 features --
+demographics (age, gender, family status), employment info, credit-bureau
+summaries, the requested loan amount, and several pre-computed external
+credit scores (`EXT_SOURCE_1/2/3`). The target is binary:
+
+  * `TARGET = 1` -- the applicant defaulted (24,825 rows, **~8.07%**)
+  * `TARGET = 0` -- the applicant repaid normally (282,686 rows, ~91.93%)
+
+The held-out Kaggle test set has 48,744 applicants whose labels are hidden.
+
+### Why class imbalance matters here
+With only ~8% positives, the **default decision rule** of "predict 1 if
+P(default) ≥ 0.5" tends to break: a model can land at 0.745 ROC AUC -- so it
+*ranks* applicants correctly -- yet still classify zero applicants as
+defaulters because none of its predicted probabilities make it over 0.5.
+That means a useful ranker can produce a useless classifier if we ignore
+imbalance. Three families of fixes are widely taught:
+
+  * **Reweighting the loss** (`class_weight='balanced'`) -- charge the
+    minority class more for each mistake.
+  * **Resampling the training set** (e.g. SMOTE) -- synthesize minority
+    samples until the training distribution is balanced.
+  * **Tuning the decision threshold** post-hoc -- keep the trained model,
+    just stop using 0.5 as the cutoff.
 
 ### Research question
-Do neural networks respond differently to class imbalance handling than the
-classic shallow models (LR, RF, HGBC)?
+> Do neural networks respond to class imbalance handling techniques the
+> same way classic shallow learners (Logistic Regression, Random Forest,
+> Histogram Gradient Boosting) do?
 
 ### Scope of this notebook
-1. Mirror the preprocessing pipeline of the classic-ML notebook (same split,
-   same imputation, same encoding, same scaling).
-2. Train **Shallow MLP** and **Deep MLP** with `GridSearchCV` over a small
-   hyperparameter grid using the same `PredefinedSplit` cross-validator.
-3. **Bonus** -- on the best MLP architecture, compare three imbalance handling
-   strategies: *baseline*, *SMOTE oversampling*, *threshold tuning*.
-4. Generate Kaggle submission and combined comparison table.""")
+1. Reproduce the preprocessing pipeline used for the classic-ML companion
+   notebook (same split, same imputation, same encoding, same scaling),
+   so that NN results are directly comparable.
+2. Tune **Shallow MLP** and **Deep MLP** with `GridSearchCV`, using the same
+   `PredefinedSplit` cross-validator.
+3. On the best MLP, compare three imbalance handling strategies --
+   *baseline*, *SMOTE oversampling*, *threshold tuning*.
+4. Combine results with the classic-ML CSVs into a single 5-model
+   leaderboard, generate a Kaggle submission, and discuss findings.""")
 
 # =====================================================================
 # 2. Notebook Configuration
@@ -114,6 +147,99 @@ target = 'TARGET'
 print('train shape:', df_train.shape)
 print('test  shape:', df_test.shape)
 df_train.head()""")
+
+md("""## Exploratory Data Analysis
+
+A short look at the data **before any preprocessing** so the design choices
+that follow are transparent. We confirm the class imbalance, look at the
+strongest predictors, and quantify the missing-value problem.""")
+
+md("### Target distribution")
+code("""tgt_counts = df_train[target].value_counts().sort_index()
+tgt_pct    = (tgt_counts / tgt_counts.sum() * 100).round(2)
+display(pd.DataFrame({'count': tgt_counts, 'percent': tgt_pct}))
+
+fig, ax = plt.subplots(1, 1, figsize=(7, 3))
+colors = ['#2E86C1', '#E74C3C']
+ax.barh(['No default (0)', 'Default (1)'], tgt_counts.values, color=colors)
+for i, (c, p) in enumerate(zip(tgt_counts.values, tgt_pct.values)):
+    ax.text(c + 4000, i, f'{c:,}  ({p:.2f}%)', va='center')
+ax.set_xlim(0, tgt_counts.max() * 1.18)
+ax.set_xlabel('# applicants')
+ax.set_title('Severe class imbalance — only 8.07% defaults')
+for s in ('top', 'right'): ax.spines[s].set_visible(False)
+plt.tight_layout(); plt.show()""")
+
+md("""### Strongest numeric predictors
+
+Pearson correlation of every numeric column with `TARGET`. The three
+external credit scores (`EXT_SOURCE_*`) dominate the ranking by a wide
+margin -- they are the most informative single features in the file.""")
+
+code("""num_cols = df_train.select_dtypes(include='number').columns.tolist()
+corr = df_train[num_cols].corr()[target].drop(target)
+
+top_pos = corr.sort_values(ascending=False).head(8)
+top_neg = corr.sort_values(ascending=True).head(8)
+
+fig, axes = plt.subplots(1, 2, figsize=(13, 4))
+axes[0].barh(top_neg.index[::-1], top_neg.values[::-1], color='#2E86C1')
+axes[0].set_title('Top 8 negative correlations  (lower default risk →)')
+axes[0].axvline(0, color='black', lw=0.5)
+for s in ('top', 'right'): axes[0].spines[s].set_visible(False)
+
+axes[1].barh(top_pos.index[::-1], top_pos.values[::-1], color='#E74C3C')
+axes[1].set_title('Top 8 positive correlations  (higher default risk →)')
+axes[1].axvline(0, color='black', lw=0.5)
+for s in ('top', 'right'): axes[1].spines[s].set_visible(False)
+
+plt.tight_layout(); plt.show()""")
+
+md("""### Missing-value landscape
+
+Many columns are missing in 50–70% of rows -- the *building information*
+columns (`APARTMENTS_AVG`, `LIVINGAREA_*`, ...) and `OWN_CAR_AGE`. We will
+mean-impute the numeric ones and let `pd.get_dummies` produce all-zero
+indicator blocks for categorical NaNs.""")
+
+code("""miss = df_train.isna().mean().sort_values(ascending=False)
+miss = miss[miss > 0]
+print(f'columns with at least one NaN: {len(miss)} / {df_train.shape[1] - 1}')
+print(f'columns with >= 50% NaN:       {(miss >= 0.5).sum()}')
+
+fig, ax = plt.subplots(figsize=(10, 4))
+ax.bar(range(len(miss)), miss.values * 100, color='#7FB3D5')
+ax.axhline(50, color='#E74C3C', lw=0.7, linestyle='--', label='50% threshold')
+ax.set_xlabel('columns (sorted by missing rate, descending)')
+ax.set_ylabel('% missing')
+ax.set_title('Missing rate per column')
+ax.legend()
+for s in ('top', 'right'): ax.spines[s].set_visible(False)
+plt.tight_layout(); plt.show()""")
+
+md("""### Categorical columns and cardinality
+
+We have 16 categorical (string) columns. Most are low-cardinality
+(2–8 categories), but `ORGANIZATION_TYPE` has 58 categories -- aggressive
+one-hot encoding would create a wide sparse block, which tends to hurt
+neural networks more than tree models.""")
+
+code("""cat_view = df_train.select_dtypes(include=['object', 'str', 'string'])
+card = cat_view.nunique().sort_values(ascending=False)
+display(pd.DataFrame({'n_unique': card}))""")
+
+md("""### EDA takeaways
+
+* **Imbalanced target** (~8% positives) → choose ROC AUC over accuracy and
+  expect to need a custom decision threshold.
+* **EXT_SOURCE_*** features carry most of the signal; preserving them
+  (mean-imputing rather than dropping) is essential.
+* **Heavy missingness** in building-info columns is structural (the lender
+  simply didn't have those fields) -- the missing-indicator pattern itself
+  may carry signal, which one-hot dummies will partly capture.
+* **`ORGANIZATION_TYPE` is the only high-cardinality categorical** -- a
+  tree-based learner can split on its dummies cheaply, but the MLP has to
+  weight ~58 sparse columns simultaneously.""")
 
 md("""## Splitting the data (80% train / 20% validation)
 
@@ -387,16 +513,25 @@ results_table""")
 # =====================================================================
 md("""# Imbalance Handling Comparison (Bonus)
 
-`MLPClassifier` does **not** support `class_weight`, so we compare three
-techniques that *do* work for it:
+The classic-ML companion notebook applies `class_weight='balanced'` to LR
+and Random Forest as a default. `MLPClassifier`, however, does **not**
+expose `class_weight`, so the cleanest way to study imbalance handling on
+the neural-network side is to compare three sklearn-friendly strategies:
 
-1. **Baseline** -- the best MLP trained on the original (imbalanced) data.
-2. **SMOTE** -- synthetic minority oversampling so the training set is 50/50.
-3. **Threshold tuning** -- train as in (1), but pick the decision threshold
-   that maximizes F1 on the validation set instead of the default 0.5.
+| # | Strategy | Acts on | Description |
+|---|---|---|---|
+| 1 | **Baseline** | nothing | Train the best MLP on the original imbalanced training set; classify at threshold 0.5. |
+| 2 | **SMOTE** | training data | Synthesize minority-class samples by interpolating between existing minority points (k-nearest-neighbor in feature space) until the training set is 50/50, then re-train the MLP. |
+| 3 | **Threshold tuning** | decision rule | Re-use the baseline model but pick the decision threshold that maximizes F1 on the validation set, instead of using the default 0.5. |
 
-For all three, ROC AUC, PR AUC, and recall/precision/F1 at the chosen
-threshold are reported on the validation set.""")
+A short walk-through of each technique is given below before we evaluate
+them. ROC AUC and PR AUC are reported on the validation set together with
+precision/recall/F1 at each method's chosen threshold.
+
+> **Why three rather than four?** `class_weight` is intentionally omitted
+> here because sklearn's `MLPClassifier` does not implement it; the
+> reweighting comparison instead lives in the classic-ML notebook for LR
+> and Random Forest.""")
 
 md("## Picking the best MLP architecture")
 code("""# Use the higher-AUC architecture from the GridSearchCV run above.
@@ -435,16 +570,39 @@ def evaluate(y_true, y_proba, threshold=0.5, label=''):
         'F1':        round(f1, 4),
     }""")
 
-md("## (1) Baseline")
+md("""## (1) Baseline -- no imbalance handling
+
+We use the best MLP from the grid search as is, with the default decision
+rule of "predict 1 iff P(default) ≥ 0.5". This serves as the reference
+point: anything more elaborate has to beat these numbers to be worth
+keeping.""")
 code("""baseline_proba = best_estimator.predict_proba(X_val)[:, 1]
 res_baseline = evaluate(y_val, baseline_proba, threshold=0.5, label='baseline')
 res_baseline""")
 
+code("""# Diagnostic: how many validation samples cross the 0.5 cutoff?
+n_pos = int((baseline_proba >= 0.5).sum())
+print(f'predictions above 0.5: {n_pos} / {len(baseline_proba)}'
+      f'  ({n_pos/len(baseline_proba)*100:.2f}%)')
+print(f'predicted-probability range : [{baseline_proba.min():.4f}, {baseline_proba.max():.4f}]')
+print(f'predicted-probability median: {np.median(baseline_proba):.4f}')""")
+
 md("""## (2) SMOTE oversampling
 
-`imblearn.over_sampling.SMOTE` synthesizes new minority-class samples by
-interpolating between existing minority points. We apply it **only to the
-training data** (never to validation -- that would leak information).""")
+**SMOTE** (Synthetic Minority Over-sampling TEchnique, Chawla et al. 2002)
+balances the training set by *manufacturing* extra minority-class samples:
+
+1. Pick a minority sample `x`.
+2. Find its `k` nearest minority-class neighbors (`k=5` is the default).
+3. Pick one neighbor `x'` at random.
+4. Generate a new synthetic point at a random position along the line
+   segment between `x` and `x'`.
+5. Repeat until the minority class has the same size as the majority class.
+
+We apply SMOTE **only to the training data** -- adding synthetic points to
+the validation set would leak information and inflate the score. After
+oversampling, the same MLP architecture is re-trained on the now-balanced
+training set.""")
 
 code("""from imblearn.over_sampling import SMOTE
 
@@ -473,9 +631,19 @@ res_smote""")
 
 md("""## (3) Threshold tuning
 
-The baseline MLP already gives us probabilities. Instead of using the default
-threshold of 0.5, we sweep a range of thresholds on the **validation set** and
-pick the one that maximizes F1.""")
+Threshold tuning operates on the **decision rule**, not the model: we keep
+the baseline MLP's predicted probabilities and ask "what cutoff gives the
+best classifier?" Concretely, for every threshold `t` we compute the
+F1-score on validation, and pick the `t` that maximizes it.
+
+This trades precision against recall. If the cost of a false negative
+(approving a bad loan) dominates the cost of a false positive (denying a
+good applicant), the optimal threshold is lower than 0.5 -- we accept more
+false alarms in exchange for catching more true defaulters.
+
+> **Important:** threshold tuning **does not change ROC AUC**; the model
+> is identical and the predicted probabilities are identical. Only the
+> precision/recall/F1 numbers move.""")
 
 code("""from sklearn.metrics import precision_recall_curve
 
@@ -494,15 +662,81 @@ code("""imbalance_results = pd.DataFrame([res_baseline, res_smote, res_threshold
 imbalance_results.to_csv(result_dir + 'cv_results/GridSearchCV/imbalance_compare.csv', index=False)
 imbalance_results""")
 
+md("""## Visual diagnostics for the best MLP
+
+ROC curve, precision–recall curve, and the confusion matrices at the
+default and tuned thresholds. Plotted on the same baseline-MLP probability
+output so the only thing that changes between the two confusion matrices
+is the cutoff.""")
+
+code("""from sklearn.metrics import roc_curve, precision_recall_curve, confusion_matrix
+
+# ROC and PR curves on the baseline probabilities
+fpr, tpr, _ = roc_curve(y_val, baseline_proba)
+prec_curve, rec_curve, _ = precision_recall_curve(y_val, baseline_proba)
+roc_auc_val = roc_auc_score(y_val, baseline_proba)
+pr_auc_val  = average_precision_score(y_val, baseline_proba)
+
+fig, axes = plt.subplots(1, 2, figsize=(13, 4.5))
+axes[0].plot(fpr, tpr, color='#1F3A68', lw=2, label=f'AUC = {roc_auc_val:.4f}')
+axes[0].plot([0, 1], [0, 1], '--', color='#888888', lw=1)
+axes[0].set_xlabel('False Positive Rate'); axes[0].set_ylabel('True Positive Rate')
+axes[0].set_title('ROC curve · best MLP (baseline probabilities)')
+axes[0].legend(loc='lower right'); axes[0].grid(alpha=0.3)
+for s in ('top', 'right'): axes[0].spines[s].set_visible(False)
+
+axes[1].plot(rec_curve, prec_curve, color='#2E86C1', lw=2, label=f'PR AUC = {pr_auc_val:.4f}')
+axes[1].axhline(y_val.mean(), color='#888888', linestyle='--', lw=1,
+                label=f'no-skill = {y_val.mean():.4f}')
+axes[1].set_xlabel('Recall'); axes[1].set_ylabel('Precision')
+axes[1].set_title('Precision–Recall curve · best MLP')
+axes[1].legend(loc='upper right'); axes[1].grid(alpha=0.3)
+for s in ('top', 'right'): axes[1].spines[s].set_visible(False)
+
+plt.tight_layout(); plt.show()""")
+
+code("""# Confusion matrices: default threshold (0.5) vs tuned threshold
+fig, axes = plt.subplots(1, 2, figsize=(11, 4.2))
+
+for ax, thr, title in [
+    (axes[0], 0.5,        f'Default threshold = 0.5'),
+    (axes[1], best_thr,   f'Tuned threshold = {best_thr:.4f}'),
+]:
+    y_pred = (baseline_proba >= thr).astype(int)
+    cm = confusion_matrix(y_val, y_pred)
+    ax.imshow(cm, cmap='Blues')
+    ax.set_xticks([0, 1]); ax.set_yticks([0, 1])
+    ax.set_xticklabels(['pred 0', 'pred 1'])
+    ax.set_yticklabels(['true 0', 'true 1'])
+    ax.set_title(title)
+    for i in range(2):
+        for j in range(2):
+            ax.text(j, i, f'{cm[i, j]:,}', ha='center', va='center',
+                    color='white' if cm[i, j] > cm.max()/2 else 'black',
+                    fontsize=12, fontweight='bold')
+
+plt.tight_layout(); plt.show()""")
+
 md("""### Quick interpretation
 
-* If **baseline** already has the highest ROC AUC, the MLP is robust enough that
-  imbalance handling provides no AUC gain -- the gain (if any) shows up as a
-  recall increase from threshold tuning.
-* If **SMOTE** improves ROC AUC, the model was indeed under-using the minority
-  class.
-* **Threshold tuning** never changes ROC AUC (it's a post-hoc decision rule),
-  but typically trades precision for recall.""")
+The numbers in the comparison table tell three different stories:
+
+* **Baseline (threshold 0.5)** scores ROC AUC = 0.745 yet has zero recall.
+  The MLP has learned a useful probability ranking, but every prediction
+  sits below 0.5 -- so naively classifying at 0.5 yields a useless rule
+  that flags no defaulters at all.
+* **SMOTE** moves ROC AUC in the *wrong* direction (0.745 → 0.648). The
+  synthetic minority points seem to push the MLP into a decision boundary
+  that does worse on the real (still-imbalanced) validation set, even
+  though precision and recall at threshold 0.5 are now non-zero.
+* **Threshold tuning** preserves ROC AUC by construction (same model, same
+  probabilities) but produces the most useful classifier of the three:
+  threshold ≈ 0.16 lifts recall from 0 to ~0.40 with precision around 0.24.
+
+The take-away on the MLP side is that **choosing the threshold matters
+more than rebalancing the data** -- a finding that is consistent with
+recent meta-analyses arguing against routine oversampling for properly
+calibrated models.""")
 
 # =====================================================================
 # 7. Combined Results (Nathan + Minwoo)
@@ -574,29 +808,109 @@ submission.head()""")
 # =====================================================================
 md("""# Interpretation
 
-1. **Among neural networks**, the [shallow / deep] MLP achieves higher
-   validation ROC AUC. Update this paragraph after running the cells above.
+### 1. Within the neural-network family
 
-2. **Compared to classic ML** (Nathan), the best NN ranks [#] in the combined
-   table. Tabular credit-default data tends to favor gradient-boosted trees,
-   so a slightly lower NN score here is consistent with the literature.
+Both MLPs land essentially on top of each other:
 
-3. **Imbalance handling**:
-   * Baseline ROC AUC = ?
-   * SMOTE ROC AUC    = ?
-   * Threshold tuning trades ~? precision for ~? recall at the F1-optimal cutoff.
+| Architecture | Best val ROC AUC | Best params |
+|---|---|---|
+| Shallow MLP — hidden `(64,)`        | **0.7405** | alpha = 0.001, learning_rate_init = 0.005 |
+| Deep MLP — hidden `(128, 64, 32)`   | **0.7416** | alpha = 0.001, learning_rate_init = 0.005 |
 
-   Replace the `?`s after running the imbalance comparison cell.""")
+The deep MLP edges the shallow one by ~0.001 AUC -- well within the
+fluctuation we would expect from a single train/val split. **Adding
+depth does not help on this dataset.** That is consistent with the
+"tabular bottleneck" intuition: once a flat MLP can express linear
+combinations of the 244 features, extra layers mostly add capacity that
+the available data cannot fill.
+
+### 2. Compared to classic shallow learners
+
+| Rank | Model | Best val ROC AUC | Owner |
+|---|---|---|---|
+| 1 | HistGradientBoosting | 0.7595 | Nathan |
+| 2 | Logistic Regression  | 0.7487 | Nathan |
+| 3 | Random Forest        | 0.7470 | Nathan |
+| 4 | Deep MLP             | 0.7416 | Minwoo |
+| 5 | Shallow MLP          | 0.7405 | Minwoo |
+
+The neural networks rank **last** in the leaderboard -- about 2 AUC
+points behind HGBC and on par with Logistic Regression. This matches the
+broader literature on tabular data, where gradient-boosted trees
+typically beat MLPs unless the dataset is very large and feature
+preprocessing has been done with deep learning in mind. Two specific
+factors plausibly drive the gap on this dataset:
+
+* The 16 categorical columns become a sparse one-hot block of 150+
+  features after encoding. Trees split on each binary indicator
+  cheaply; the MLP has to fit weights on the whole block.
+* The strongest predictors (`EXT_SOURCE_*`) are pre-engineered linear
+  scores. A linear model can use them directly; a tree can split on them;
+  but a deep MLP gains nothing from re-discovering the linear relationship.
+
+### 3. Effect of imbalance handling on the MLP
+
+| Method | Threshold | ROC AUC | Precision | Recall | F1 |
+|---|---|---|---|---|---|
+| Baseline (no handling) | 0.500   | 0.745 | 0.00 | 0.00 | 0.00 |
+| SMOTE oversampling     | 0.500   | 0.648 | 0.16 | 0.21 | 0.18 |
+| Threshold tuning       | 0.164   | 0.745 | 0.24 | 0.40 | 0.30 |
+
+* **SMOTE actually hurts the MLP here.** ROC AUC drops by ~0.10 because
+  the synthetic minority points distort the decision surface relative to
+  the real (still-imbalanced) validation distribution.
+* **Threshold tuning is the clear winner.** Same model, same probabilities,
+  ROC AUC unchanged -- but the F1-optimal cutoff (~0.16) raises recall
+  from 0 to 0.40. For a lender, that is the gap between "useless
+  classifier" and "catches 4 in 10 defaulters".
+* **The baseline rule-of-thumb 0.5 cutoff is wrong for 8% positives.**
+  No prediction crossed it, so precision, recall, and F1 collapsed to
+  zero even though the underlying ranker is competitive. This is the
+  mechanism behind the "high AUC but useless predictions" failure mode
+  that motivates the imbalance comparison.""")
 
 md("""# Conclusion
 
-* **Best model overall**: ... (filled in after the run).
-* **Effect of imbalance handling on the MLP**: ...
-* **Limitations**: only the main `application_*.csv` tables are used; the
-  bureau / previous_application / installments tables would likely close most
-  of the gap to the public-leaderboard top scores.
-* **Future work**: integrate the auxiliary tables; ensemble the best NN with
-  HGBC; calibrate probabilities (Platt scaling) before submission.""")
+**Best model overall.** Histogram Gradient Boosting (Nathan's notebook)
+takes the top spot at validation ROC AUC = 0.7595. Among the neural
+networks, the Deep MLP barely edges the Shallow MLP (0.7416 vs 0.7405),
+and both lag the classic shallow learners by ~1–2 AUC points.
+
+**Effect of imbalance handling on the MLP.** Threshold tuning is the
+right tool: it preserves AUC and lifts recall from 0% to ~40% by simply
+moving the decision cutoff from 0.5 to 0.16. Resampling the training set
+with SMOTE moved AUC in the wrong direction. The class_weight comparison
+lives in the classic-ML notebook because sklearn's `MLPClassifier` does
+not implement that parameter.
+
+**Answer to the research question.** Yes -- shallow learners and neural
+networks respond differently to imbalance handling. LR and Random Forest
+benefit from `class_weight='balanced'` directly; the MLP cannot use that
+hook, and the closest substitute (SMOTE) is *harmful* here. The treatment
+that *does* work for the MLP -- threshold tuning -- has nothing to do
+with the training data and could in principle have been applied to LR or
+RF too.
+
+**Limitations.**
+* Only the main `application_*.csv` tables are used; the auxiliary
+  tables (`bureau`, `previous_application`, `installments_payments`,
+  `credit_card_balance`) typically close 1–2 AUC points of the gap to
+  the public-leaderboard top scores.
+* `PredefinedSplit` is fast but optimistic compared to k-fold CV; a full
+  5-fold CV would tighten our confidence intervals.
+* The MLP hyperparameter grid is small (4 combinations per architecture).
+  A wider sweep over hidden sizes, dropout, and batch normalization
+  would likely move the MLP up by another ~0.01 AUC, but is unlikely to
+  overtake HGBC.
+
+**Future work.**
+* Integrate the four auxiliary Kaggle tables and re-run the same pipeline
+  with the enriched feature set.
+* Ensemble HGBC with the best MLP -- the two model families are uncorrelated
+  enough that even a simple probability average tends to help.
+* Calibrate probabilities (Platt or isotonic) before submitting; the
+  current MLP outputs are systematically below 0.5 and would benefit
+  from calibration even outside the threshold-tuning context.""")
 
 # =====================================================================
 # Write out
