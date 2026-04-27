@@ -153,20 +153,20 @@
 > `class_weight`, so I compared three other strategies on the best NN.
 
 > **Strategy 1, baseline.** Train as is, classify at threshold 0.5.
-> ROC AUC is 0.745 — the model has clearly learned a useful probability
+> ROC AUC is 0.742 — the model has clearly learned a useful probability
 > ranking. But precision and recall are both **zero**. Why? Because the
 > model's probability outputs never cross 0.5. Useful ranker, useless
 > classifier.
 
 > **Strategy 2, SMOTE oversampling.** Synthesize minority-class samples
 > until the training set is 50/50, then re-train. Counterintuitively,
-> this **hurt** the model — ROC AUC dropped from 0.745 to 0.648.
+> this **hurt** the model — ROC AUC dropped from 0.742 to 0.648.
 
 > **Strategy 3, threshold tuning.** Keep the baseline model, but pick
 > the threshold that maximizes F1 on validation. That cutoff is
-> **0.164**. Threshold tuning preserves ROC AUC — the model is identical
-> — but it lifts recall from **zero to 40 percent**, with precision
-> around 0.24 and F1 of 0.30.
+> **0.139**. Threshold tuning preserves ROC AUC — the model is identical
+> — but it lifts recall from **zero to 41 percent**, with precision
+> around 0.22 and F1 of 0.29.
 
 > So the headline finding for the MLP is: **choosing the threshold
 > matters more than rebalancing the data.** SMOTE made things worse;
@@ -182,7 +182,7 @@
 > neural networks tie LR and Random Forest; depth alone doesn't unlock
 > new performance on this tabular data. Third, on the MLP, threshold
 > tuning is the right tool for imbalance — recall jumped from 0% to
-> 40%, while SMOTE actually moved AUC in the wrong direction.
+> 41%, while SMOTE actually moved AUC in the wrong direction.
 
 > Limitations: we only used the main `application_*.csv` tables.
 > Auxiliary tables — `bureau`, `previous_application`,

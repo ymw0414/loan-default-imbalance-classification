@@ -665,19 +665,47 @@ precision/recall/F1 at each method's chosen threshold.
 > reweighting comparison instead lives in the classic-ML notebook for LR
 > and Random Forest.""")
 
-md("## Picking the best MLP architecture")
-code("""# Pick the higher-AUC of the two NN architectures.
-nn_sorted = sorted(nn_results, key=lambda x: x[0], reverse=True)
-best_score, best_params, best_estimator = nn_sorted[0]
+md("""## Picking the best MLP architecture (and re-fitting on X_train only)
 
-print('Best NN from grid search:')
+> **Methodological note (per Nathaniel's review).**
+> `GridSearchCV` returns its `best_estimator_` re-fit on the *full* data we
+> passed in (here `X_train_val`, i.e. train $+$ val). If we then evaluated
+> imbalance methods on `X_val`, the model would already have seen those
+> rows during refit, inflating the comparison.
+>
+> We side-step this by **re-training a fresh MLP on `X_train` only**, using
+> the best hyperparameters that GridSearchCV found. The fresh estimator is
+> what we use for all imbalance experiments below.""")
+
+code("""# Pick the higher-AUC of the two NN architectures (from the held-out grid search).
+nn_sorted = sorted(nn_results, key=lambda x: x[0], reverse=True)
+best_score, best_params, best_estimator_grid = nn_sorted[0]
+
+print('Best NN from grid search (held-out val):')
 print('  val ROC AUC:', round(best_score, 4))
 print('  params     :', best_params)
 
 # Identify shallow vs deep
-arch = best_estimator.named_steps['model'].hidden_layer_sizes
+arch = best_estimator_grid.named_steps['model'].hidden_layer_sizes
 print('  hidden     :', arch,
       '(shallow)' if len(arch) == 1 else '(deep)')""")
+
+code("""# Re-train a fresh MLP on X_train ONLY (avoids the GridSearchCV refit-on-train+val leak).
+fresh_alpha = best_estimator_grid.named_steps['model'].alpha
+fresh_lr    = best_estimator_grid.named_steps['model'].learning_rate_init
+
+best_estimator = MLPClassifier(
+    hidden_layer_sizes=arch,
+    activation='relu',
+    solver='adam',
+    alpha=fresh_alpha,
+    learning_rate_init=fresh_lr,
+    early_stopping=True,
+    max_iter=100,
+    random_state=random_seed,
+)
+best_estimator.fit(X_train, y_train)
+print('fresh MLP fitted on X_train only ({} rows)'.format(X_train.shape[0]))""")
 
 md("## Helper: evaluation metrics")
 code("""from sklearn.metrics import (
@@ -743,13 +771,15 @@ X_train_sm, y_train_sm = sm.fit_resample(X_train, y_train)
 
 print('train class distribution after  SMOTE:', np.bincount(y_train_sm))""")
 
-code("""# Re-train MLP with the same architecture but on SMOTE-balanced data
+code("""# Re-train MLP with the same architecture but on SMOTE-balanced data.
+# Uses the same hyperparameters as the fresh baseline so SMOTE vs baseline
+# is a fair head-to-head (only the training distribution differs).
 mlp_smote = MLPClassifier(
-    hidden_layer_sizes=best_estimator.named_steps['model'].hidden_layer_sizes,
+    hidden_layer_sizes=arch,
     activation='relu',
     solver='adam',
-    alpha=best_estimator.named_steps['model'].alpha,
-    learning_rate_init=best_estimator.named_steps['model'].learning_rate_init,
+    alpha=fresh_alpha,
+    learning_rate_init=fresh_lr,
     early_stopping=True,
     max_iter=100,
     random_state=random_seed,
@@ -912,13 +942,14 @@ Train the overall best NN on the **full training data** (train + val
 concatenated, before SMOTE) and predict probabilities on the held-out Kaggle
 test set.""")
 
-code("""# Best NN architecture, retrained on the full train+val data
+code("""# Best NN architecture, retrained on the full train+val data for the final
+# Kaggle submission (using train+val here is fine -- no held-out evaluation).
 best_mlp = MLPClassifier(
-    hidden_layer_sizes=best_estimator.named_steps['model'].hidden_layer_sizes,
+    hidden_layer_sizes=arch,
     activation='relu',
     solver='adam',
-    alpha=best_estimator.named_steps['model'].alpha,
-    learning_rate_init=best_estimator.named_steps['model'].learning_rate_init,
+    alpha=fresh_alpha,
+    learning_rate_init=fresh_lr,
     early_stopping=True,
     max_iter=100,
     random_state=random_seed,
@@ -1001,10 +1032,14 @@ factors plausibly drive the gap on this dataset:
 
 md("""# Conclusion
 
-**Best model overall.** Histogram Gradient Boosting (Nathaniel Badalov's notebook)
-takes the top spot at validation ROC AUC = 0.7595. Among the neural
-networks, the Deep MLP barely edges the Shallow MLP (0.7416 vs 0.7405),
-and both lag the classic shallow learners by ~1–2 AUC points.
+**Best model overall.** Histogram Gradient Boosting takes the top spot at
+validation ROC AUC = 0.7595, indicating that nonlinear tree-based boosting
+is well suited for this dataset and can capture interactions across
+heterogeneous features. Logistic Regression and Random Forest perform
+similarly, both slightly below HGBC, with Logistic Regression likely
+benefiting from strong linear predictors such as `EXT_SOURCE_*`. Among the
+neural networks, the Deep MLP barely edges the Shallow MLP (0.7416 vs
+0.7405), and both lag the classic shallow learners by ~1–2 AUC points.
 
 **Effect of imbalance handling on the MLP.** Threshold tuning is the
 right tool: it preserves AUC and lifts recall from 0% to ~40% by simply

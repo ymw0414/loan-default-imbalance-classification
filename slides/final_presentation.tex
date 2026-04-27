@@ -176,9 +176,9 @@
     \toprule
     \hp{Method}              & \hp{Thresh.} & \hp{AUC} & \hp{PR-AUC} & \hp{Prec.} & \hp{Recall} & \hp{F1} \\
     \midrule
-    Baseline                 & 0.500 & 0.745 & 0.222 & 0.00 & 0.00 & 0.00 \\
+    Baseline                 & 0.500 & 0.742 & 0.217 & 0.00 & 0.00 & 0.00 \\
     SMOTE                    & 0.500 & {\color{warn}\textbf{0.648}} & 0.134 & 0.16 & 0.21 & 0.18 \\
-    Threshold tuning $\star$ & 0.164 & 0.745 & 0.222 & 0.24 & \hi{\textbf{0.40}} & \textbf{0.30} \\
+    Threshold tuning $\star$ & 0.139 & 0.742 & 0.217 & 0.22 & \hi{\textbf{0.41}} & \textbf{0.29} \\
     \bottomrule
   \end{tabular}
 
@@ -187,9 +187,9 @@
   \raggedright
   \hp{Key takeaways}
   \begin{itemize}
-    \item Baseline at 0.5: AUC 0.745 but recall \hi{0\%}.
-    \item SMOTE hurts: AUC drops 0.10.
-    \item Threshold tuning at 0.164 lifts recall to \hi{40\%}.
+    \item Baseline at 0.5: AUC 0.742 but recall \hi{0\%}.
+    \item SMOTE hurts: AUC drops 0.09.
+    \item Threshold tuning at 0.139 lifts recall to \hi{41\%}.
   \end{itemize}
 
   \medskip
@@ -199,14 +199,23 @@
 
 % --------------------------- Slide 8 — Conclusions ---------------------------
 \begin{frame}{Conclusions}
-  \hp{What we learned}
+  \footnotesize
+  \hp{Best model overall}\\
+  HistGradientBoosting takes the top spot at val ROC AUC $=$ \hi{0.7595},
+  indicating that nonlinear tree boosting captures interactions across
+  heterogeneous features. LR and RF perform similarly, both slightly below
+  HGBC — LR likely benefits from strong linear predictors such as
+  \texttt{EXT\_SOURCE\_*}. Among NNs, Deep MLP barely edges Shallow MLP
+  (0.7416 vs 0.7405); both lag classic shallow learners by $\sim$1--2 AUC pts.
+
+  \medskip
+  \hp{Imbalance handling on the MLP}
   \begin{itemize}
-    \item HGBC wins  (val AUC $=$ \hi{0.7595}).
-    \item NN ties LR / RF — depth alone doesn't help on tabular.
-    \item Threshold tuning lifts MLP recall \hi{0\% $\to$ 40\%}; SMOTE hurt AUC.
+    \item Threshold tuning lifts recall \hi{0\% $\to$ 41\%}; SMOTE hurts AUC.
+    \item Choosing the threshold matters more than rebalancing the data.
   \end{itemize}
 
-  \bigskip
+  \medskip
   \hp{Limitations}
   \begin{itemize}
     \item Only main \texttt{application\_*.csv} tables  (auxiliary tables would add several AUC points).
