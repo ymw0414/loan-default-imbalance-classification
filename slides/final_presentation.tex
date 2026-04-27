@@ -353,31 +353,27 @@ Tree boosting wins by $\sim$1 AUC point — consistent with the literature on ta
 
 \textbf{Both MLPs land below LR / RF / HGBC.\quad Why?}
 
-\vspace{0.15cm}
-
 \textbf{1. Tabular favors trees, not NN}
 \begin{itemize}
     \item NN excels on image, text, audio — continuous, structured inputs
-    \item Trees split on individual features cleanly; NN must weight all features at once
+    \item Trees split on individual features cleanly; NN must weight all at once
 \end{itemize}
 
 \textbf{2. Feature signal is already linear-friendly}
 \begin{itemize}
-    \item \texttt{EXT\_SOURCE\_1/2/3} are pre-engineered credit scores
-    \item LR uses them directly; trees split on them directly
+    \item \texttt{EXT\_SOURCE\_*} are pre-engineered credit scores — LR / trees use them directly
     \item NN must rediscover the linear relationship through nonlinear layers
 \end{itemize}
 
 \textbf{3. One-hot encoding penalizes NN}
 \begin{itemize}
     \item 16 categorical columns $\to$ 140 sparse 0/1 columns (70\% of features)
-    \item Trees handle sparse binary inputs natively; MLP must learn weights on all of them
+    \item Trees handle sparse binary inputs natively; MLP must learn weights on all
 \end{itemize}
 
 \textbf{4. sklearn MLP has no \texttt{class\_weight}}
 \begin{itemize}
-    \item LR and RF apply \texttt{class\_weight='balanced'} directly in the loss
-    \item MLP can only rely on resampling (SMOTE) or post-hoc threshold tuning
+    \item LR / RF apply \texttt{class\_weight='balanced'} in the loss; MLP cannot
 \end{itemize}
 
 \begin{block}{Consensus in the literature}
