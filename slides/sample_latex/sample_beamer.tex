@@ -1,0 +1,245 @@
+% =====================================================================
+% Sample 2: LaTeX Beamer presentation
+% Compile with:
+%   pdflatex sample_beamer.tex
+%   pdflatex sample_beamer.tex   (run twice for TOC + cross-refs)
+%
+% Requires: TeX Live or MiKTeX with the metropolis theme
+%   (auto-installed by most distributions on first compile)
+%
+% Output: sample_beamer.pdf  (10 slides, 16:9)
+% =====================================================================
+\documentclass[aspectratio=169,11pt]{beamer}
+
+% --- theme ---
+\usetheme{metropolis}
+\usecolortheme{default}
+
+% --- packages ---
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usepackage{appendixnumberbeamer}
+
+% --- color palette (matches our PowerPoint sample) ---
+\definecolor{navy}{HTML}{1F3A68}
+\definecolor{accent}{HTML}{2E86C1}
+\definecolor{warn}{HTML}{C0392B}
+\definecolor{soft}{HTML}{ECF0F1}
+
+% --- override metropolis colors ---
+\setbeamercolor{normal text}{fg=black, bg=white}
+\setbeamercolor{frametitle}{fg=navy, bg=soft}
+\setbeamercolor{title}{fg=navy}
+\setbeamercolor{subtitle}{fg=accent}
+\setbeamercolor{section title}{fg=navy}
+\setbeamercolor{progress bar}{fg=accent, bg=soft}
+
+% --- speaker tag macro ---
+\newcommand{\speaker}[1]{\hfill\small\textit{\textcolor{accent}{#1}}}
+
+% --- title page ---
+\title{Loan Default Prediction}
+\subtitle{Comparing Classic ML and Neural Networks under Class Imbalance}
+\author{Minwoo Yoo \and Nathan}
+\institute{Home Credit Default Risk · Kaggle}
+\date{}
+
+% =====================================================================
+\begin{document}
+% =====================================================================
+
+% --------------------------- Slide 1 ---------------------------------
+\maketitle
+
+% --------------------------- Slide 2 ---------------------------------
+\begin{frame}{Problem \& Motivation \speaker{Minwoo · 1 min}}
+  \textbf{The task}\par
+  Predict the probability that a loan applicant defaults
+  (binary, \texttt{TARGET}~$\in \{0, 1\}$).
+  \medskip
+  \textbf{Why class imbalance matters}
+  \begin{itemize}
+    \item Only $\sim$8.07\% of applicants default --- the data is severely imbalanced.
+    \item A "predict-no-default" baseline scores 92\% accuracy with zero recall.
+    \item A model can hit ROC AUC = 0.745 yet classify zero defaulters at the 0.5 threshold.
+  \end{itemize}
+  \medskip
+  \textbf{Research question}\par
+  {\color{accent}\itshape Do classic shallow learners and neural networks
+  respond differently to class imbalance handling?}
+\end{frame}
+
+% --------------------------- Slide 3 ---------------------------------
+\begin{frame}{Dataset · Home Credit Default Risk \speaker{Minwoo · 1 min}}
+  \begin{columns}[T]
+    \column{0.55\textwidth}
+      \textbf{Size}
+      \begin{itemize}\small
+        \item Train: 307{,}511 applicants $\times$ 122 features
+        \item Test: 48{,}744 applicants (Kaggle hidden labels)
+      \end{itemize}
+      \textbf{Class imbalance}
+      \begin{itemize}\small
+        \item Default rate $\approx$ 8.07\% (24{,}825 / 307{,}511)
+      \end{itemize}
+      \textbf{Strongest signals}
+      \begin{itemize}\small
+        \item \texttt{EXT\_SOURCE\_1/2/3} (external credit scores), $|\rho| \approx 0.16$--$0.18$
+        \item \texttt{DAYS\_EMPLOYED} sentinel 365{,}243 flags 18\% (unemployed)
+        \item Building-info columns 50--70\% missing
+      \end{itemize}
+    \column{0.43\textwidth}
+      \includegraphics[width=\linewidth]{../../result/home_credit/figure/class_balance.png}
+  \end{columns}
+\end{frame}
+
+% --------------------------- Slide 4 ---------------------------------
+\begin{frame}{Methodology · Shared Pipeline \speaker{Nathan · 1 min}}
+  \textbf{Preprocessing (identical for all five models)}
+  \begin{itemize}\small
+    \item 80\% / 20\% stratified train--val split (\texttt{random\_state = 42})
+    \item Drop \texttt{SK\_ID\_CURR}; keep IDs only for the submission file
+    \item Mean imputation for numeric NaN; one-hot encode 16 categoricals $\to$ 244 features
+    \item \texttt{StandardScaler} fitted on train only (essential for LR / MLP)
+  \end{itemize}
+  \medskip
+  \textbf{Tuning \& validation}
+  \begin{itemize}\small
+    \item \texttt{GridSearchCV} with \texttt{PredefinedSplit} (single train$\to$val fold, no random k-fold)
+    \item Scoring: \texttt{roc\_auc}; best parameter setting picked per model
+    \item CV CSVs written to \texttt{result/home\_credit/cv\_results/GridSearchCV/}
+  \end{itemize}
+\end{frame}
+
+% --------------------------- Slide 5 ---------------------------------
+\begin{frame}{Five Models Compared \speaker{Nathan · 1.5 min}}
+  \scriptsize
+  \begin{tabular}{p{4.0cm}p{2.5cm}p{1.4cm}p{4.5cm}}
+    \toprule
+    \textbf{Model} & \textbf{Family} & \textbf{Owner} & \textbf{Tuned hyperparameters} \\
+    \midrule
+    Logistic Regression           & Linear           & Nathan & \texttt{C}, \texttt{tol}; \texttt{class\_weight=balanced} \\
+    Random Forest                 & Tree (bagging)   & Nathan & \texttt{n\_estimators}, \texttt{min\_samples\_*}; \texttt{class\_weight} \\
+    HistGradientBoosting          & Tree (boosting)  & Nathan & \texttt{learning\_rate}, \texttt{max\_iter}, \texttt{min\_samples\_leaf} \\
+    Shallow MLP --- hidden $(64,)$           & Neural network & Minwoo & \texttt{alpha}, \texttt{learning\_rate\_init} \\
+    Deep MLP --- hidden $(128, 64, 32)$       & Neural network & Minwoo & \texttt{alpha}, \texttt{learning\_rate\_init} \\
+    \bottomrule
+  \end{tabular}
+  \medskip
+  \normalsize
+  \textbf{Why this lineup?}
+  \begin{itemize}\small
+    \item Spans the curriculum: linear $\to$ tree (bagging + boosting) $\to$ shallow + deep neural networks.
+    \item Same preprocessing, same train/val split, same scoring $\to$ fair comparison.
+  \end{itemize}
+\end{frame}
+
+% --------------------------- Slide 6 ---------------------------------
+\begin{frame}{Combined Validation ROC AUC \speaker{Nathan · 1 min}}
+  \begin{columns}[T]
+    \column{0.62\textwidth}
+      \includegraphics[width=\linewidth]{../../result/home_credit/figure/model_auc_bar.png}
+    \column{0.36\textwidth}
+      \scriptsize
+      \begin{tabular}{lc}
+        \toprule
+        \textbf{Model} & \textbf{AUC} \\
+        \midrule
+        HistGradBoost     & \textbf{0.7595} \\
+        Logistic Reg.     & 0.7487 \\
+        Random Forest     & 0.7470 \\
+        Deep MLP          & 0.7416 \\
+        Shallow MLP       & 0.7405 \\
+        \bottomrule
+      \end{tabular}
+      \medskip
+      \normalsize
+      Tree boosting wins by $\sim$1 AUC point ---
+      consistent with the literature on tabular credit data.
+  \end{columns}
+\end{frame}
+
+% --------------------------- Slide 7 ---------------------------------
+\begin{frame}{Neural Network Track \speaker{Minwoo · 1.5 min}}
+  \textbf{Architecture}
+  \begin{itemize}\small
+    \item Shallow MLP --- hidden $(64,)$ \quad $\sim$15.7K parameters
+    \item Deep MLP --- hidden $(128, 64, 32)$ \quad $\sim$42K parameters
+    \item ReLU activation, Adam optimizer, \texttt{early\_stopping = True}
+  \end{itemize}
+  \textbf{Hyperparameter tuning}
+  \begin{itemize}\small
+    \item \texttt{alpha} (L2 reg.) $\in \{10^{-4}, 10^{-3}\}$,
+          \texttt{lr\_init} $\in \{0.001, 0.005\}$
+    \item Best for both: $\alpha = 10^{-3}$, lr = 0.005
+  \end{itemize}
+  \textbf{Findings}
+  \begin{itemize}\small
+    \item Shallow $0.7405$ \quad vs \quad Deep $0.7416$ \quad $\Rightarrow$ depth adds $\sim$0.001 (noise).
+    \item NN ranks 4th/5th overall; bottleneck is the feature set, not the model.
+  \end{itemize}
+\end{frame}
+
+% --------------------------- Slide 8 ---------------------------------
+\begin{frame}{Imbalance Handling on the Best MLP \speaker{Minwoo · 1.5 min}}
+  \scriptsize
+  \begin{tabular}{lcccccc}
+    \toprule
+    \textbf{Method} & \textbf{Threshold} & \textbf{ROC AUC} & \textbf{PR AUC} & \textbf{P} & \textbf{R} & \textbf{F1} \\
+    \midrule
+    Baseline           & 0.500 & 0.745 & 0.222 & 0.00 & 0.00 & 0.00 \\
+    SMOTE              & 0.500 & {\color{warn}0.648} & 0.134 & 0.16 & 0.21 & 0.18 \\
+    Threshold tuning   & 0.164 & 0.745 & 0.222 & 0.24 & \textbf{0.40} & \textbf{0.30} \\
+    \bottomrule
+  \end{tabular}
+  \medskip\par
+  \begin{columns}[T]
+    \column{0.55\textwidth}
+      \includegraphics[width=\linewidth]{../../result/home_credit/figure/imbalance_compare.png}
+    \column{0.42\textwidth}
+      \normalsize
+      \textbf{Headline}
+      \begin{itemize}\small
+        \item Baseline: AUC 0.745, recall \textbf{0\%} (no prediction crosses 0.5).
+        \item SMOTE \textbf{hurt}: AUC dropped 0.10.
+        \item Threshold tuning at 0.164 lifts recall to 40\%.
+      \end{itemize}
+      \textcolor{accent}{\textit{Choosing the threshold matters more than rebalancing the data.}}
+  \end{columns}
+\end{frame}
+
+% --------------------------- Slide 9 ---------------------------------
+\begin{frame}{Conclusions \speaker{Both · 1 min}}
+  \textbf{What we learned}
+  \begin{itemize}\small
+    \item Best: HistGradBoost at val ROC AUC = 0.7595; tree boosting wins by $\sim$1 AUC point.
+    \item Neural networks tie LR and RF --- depth alone does not help on this tabular data.
+    \item \textcolor{accent}{On the MLP, threshold tuning lifts recall from 0\% to 40\%; SMOTE hurt AUC.}
+  \end{itemize}
+  \textbf{Limitations}
+  \begin{itemize}\small
+    \item Only main \texttt{application\_*.csv} tables --- auxiliary tables typically add several AUC points.
+    \item \texttt{PredefinedSplit} is fast but optimistic; full $k$-fold CV would tighten confidence intervals.
+  \end{itemize}
+  \textbf{Future work}
+  \begin{itemize}\small
+    \item Integrate auxiliary tables; ensemble HGBC + best MLP; Platt / isotonic calibration.
+  \end{itemize}
+\end{frame}
+
+% --------------------------- Slide 10 --------------------------------
+\begin{frame}[standout]
+  \Huge Thank You \\[0.3em]
+  \large Questions?
+
+  \vspace{1.5em}
+  \normalsize
+  \textbf{Recording link:}\quad
+  \texttt{<<INSERT RECORDING LINK BEFORE SUBMISSION>>}\\[0.4em]
+  \textbf{Code:}\quad
+  \texttt{github.com/ymw0414/loan-default-imbalance-classification}
+\end{frame}
+
+\end{document}
