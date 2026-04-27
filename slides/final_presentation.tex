@@ -88,6 +88,8 @@ Default events are rare (\textasciitilde 8\%) $\Rightarrow$ strong class imbalan
     \item Default threshold (0.5) often fails in imbalanced settings
 \end{itemize}
 
+\vspace{0.25cm}
+
 \textbf{Common solutions}
 \begin{itemize}
     \item Reweighting the loss (class weights)
@@ -95,11 +97,17 @@ Default events are rare (\textasciitilde 8\%) $\Rightarrow$ strong class imbalan
     \item Adjusting the decision threshold
 \end{itemize}
 
+\vspace{0.25cm}
+
 \begin{block}{Research Question}
-Do neural networks respond to class imbalance handling techniques the same way as classic shallow learners?
+\begin{itemize}
+    \item Do neural networks respond to class imbalance handling techniques the same way as classic shallow learners?
+\end{itemize}
 \end{block}
 
-\textbf{Models compared}
+\vspace{0.15cm}
+
+\textbf{Models compared}\vspace{0.1cm}
 \begin{itemize}
     \item Logistic Regression, Random Forest, HistGradientBoosting
     \item Shallow and Deep MLP
@@ -183,12 +191,16 @@ $\Rightarrow$ severe class imbalance
     \item They provide a benchmark for the neural networks
 \end{itemize}
 
+\vspace{0.2cm}
+
 \textbf{Models tested}
 \begin{itemize}
     \item \textbf{Logistic Regression}: strong baseline for probability prediction
     \item \textbf{Random Forest}: captures nonlinear patterns and reduces overfitting
     \item \textbf{Histogram Gradient Boosting}: captures complex interactions efficiently
 \end{itemize}
+
+\vspace{0.2cm}
 
 \begin{block}{Handling class imbalance}
 \begin{itemize}
@@ -210,23 +222,25 @@ $\Rightarrow$ severe class imbalance
     \midrule
     HistGradientBoosting
         & \texttt{learning\_rate}=0.05; \texttt{max\_iter}=200; \texttt{leaf}=100
-        & \hi{\textbf{0.7595}} \\[0.15em]
+        & \hi{\textbf{0.7595}} \\[0.2em]
     Logistic Regression
         & \texttt{C}=0.1; \texttt{tol}=1e-5; \texttt{class\_weight=balanced}
-        & 0.7487 \\[0.15em]
+        & 0.7487 \\[0.2em]
     Random Forest
         & \texttt{n\_estimators}=200; \texttt{min\_leaf}=1; \texttt{balanced}
         & 0.7470 \\
     \bottomrule
 \end{tabularx}
 
-\vspace{0.25cm}
+\vspace{0.35cm}
 
 \textbf{Key takeaways}
 \begin{itemize}
-    \item HGBC performs best (0.7595) — boosted trees capture nonlinear interactions effectively.
-    \item LR and RF perform similarly — strong linear signal with moderate nonlinearity.
-    \item RF shows overfitting (train 0.96 vs val 0.747); boosting is more stable.
+    \item Histogram Gradient Boosting performs best (0.7595), suggesting boosted trees capture nonlinear interactions in tabular data effectively.
+
+    \item Logistic Regression and Random Forest perform similarly, indicating strong linear signal alongside moderate nonlinearities.
+
+    \item Random Forest shows signs of overfitting (train 0.96 vs val 0.747), while boosting remains more stable.
 \end{itemize}
 
 \end{frame}
