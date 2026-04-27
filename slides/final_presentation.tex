@@ -80,15 +80,13 @@ Default events are rare (\textasciitilde 8\%) $\Rightarrow$ strong class imbalan
 % ---------- Slide 3 — From Imbalance to Research Question (Nathaniel) ----------
 \begin{frame}{From Imbalance to Research Question}
 
-\footnotesize
+\scriptsize
 
 \textbf{Why imbalance matters}
 \begin{itemize}
     \item Models can achieve high ROC AUC but still predict no defaults
     \item Default threshold (0.5) often fails in imbalanced settings
 \end{itemize}
-
-\vspace{0.2cm}
 
 \textbf{Common solutions}
 \begin{itemize}
@@ -97,13 +95,9 @@ Default events are rare (\textasciitilde 8\%) $\Rightarrow$ strong class imbalan
     \item Adjusting the decision threshold
 \end{itemize}
 
-\vspace{0.2cm}
-
 \begin{block}{Research Question}
 Do neural networks respond to class imbalance handling techniques the same way as classic shallow learners?
 \end{block}
-
-\vspace{0.15cm}
 
 \textbf{Models compared}
 \begin{itemize}
@@ -250,7 +244,7 @@ $\Rightarrow$ severe class imbalance
 
 % --------------------------- Slide 8 — Neural Network Models ---------------------------
 \begin{frame}{Neural Network Models}
-  \small
+  \footnotesize
   \begin{tabularx}{\textwidth}{@{}l c c r@{}}
     \toprule
     \hp{Architecture}     & \hp{Hidden}      & \hp{Parameters}  & \hp{Val AUC} \\
@@ -304,7 +298,7 @@ $\Rightarrow$ severe class imbalance
 % --------------------------- Slide 10 — Imbalance Handling (leakage-fixed) ---------------------------
 \begin{frame}{Imbalance Handling on the Best MLP}
   \centering
-  \footnotesize
+  \scriptsize
   \begin{tabular}{@{}lcccccc@{}}
     \toprule
     \hp{Method}              & \hp{Thresh.} & \hp{AUC} & \hp{PR-AUC} & \hp{Prec.} & \hp{Recall} & \hp{F1} \\
@@ -316,7 +310,6 @@ $\Rightarrow$ severe class imbalance
   \end{tabular}
 
   \medskip
-  \footnotesize
   \raggedright
   \hp{Key takeaways}
   \begin{itemize}
