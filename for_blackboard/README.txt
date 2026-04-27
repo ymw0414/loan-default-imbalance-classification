@@ -2,8 +2,8 @@ Final Project Group 15 — Blackboard submission
 ================================================
 
 Files in this folder:
-  1. final_project.ipynb        Project notebook (combined notebook)
-  2. final_presentation.pdf     Slide deck (will hold recording link)
+  1. Group15_Minwoo_Nathaniel_final_project.ipynb        Project notebook
+  2. Group15_Minwoo_Nathaniel_final_presentation.pdf     Slide deck (with recording link on slide 13)
 
 Required deliverables (per professor's email):
   - Recorded talk (8-10 min)
