@@ -80,13 +80,15 @@ Default events are rare (\textasciitilde 8\%) $\Rightarrow$ strong class imbalan
 % ---------- Slide 3 — From Imbalance to Research Question (Nathaniel) ----------
 \begin{frame}{From Imbalance to Research Question}
 
+\footnotesize
+
 \textbf{Why imbalance matters}
 \begin{itemize}
     \item Models can achieve high ROC AUC but still predict no defaults
     \item Default threshold (0.5) often fails in imbalanced settings
 \end{itemize}
 
-\vspace{0.35cm}
+\vspace{0.2cm}
 
 \textbf{Common solutions}
 \begin{itemize}
@@ -95,18 +97,15 @@ Default events are rare (\textasciitilde 8\%) $\Rightarrow$ strong class imbalan
     \item Adjusting the decision threshold
 \end{itemize}
 
-\vspace{0.35cm}
-
-\begin{block}{Research Question}
-\begin{itemize}
-    \item Do neural networks respond to class imbalance handling techniques the same way as classic shallow learners?
-\end{itemize}
-
-\end{block}
-
 \vspace{0.2cm}
 
-\textbf{Models compared}\vspace{0.15cm}
+\begin{block}{Research Question}
+Do neural networks respond to class imbalance handling techniques the same way as classic shallow learners?
+\end{block}
+
+\vspace{0.15cm}
+
+\textbf{Models compared}
 \begin{itemize}
     \item Logistic Regression, Random Forest, HistGradientBoosting
     \item Shallow and Deep MLP
@@ -251,6 +250,7 @@ $\Rightarrow$ severe class imbalance
 
 % --------------------------- Slide 8 — Neural Network Models ---------------------------
 \begin{frame}{Neural Network Models}
+  \small
   \begin{tabularx}{\textwidth}{@{}l c c r@{}}
     \toprule
     \hp{Architecture}     & \hp{Hidden}      & \hp{Parameters}  & \hp{Val AUC} \\
@@ -260,14 +260,12 @@ $\Rightarrow$ severe class imbalance
     \bottomrule
   \end{tabularx}
 
-  \bigskip
-  \small
-  ReLU \,·\, Adam \,·\, early stopping. \\
-  Tuned: \texttt{alpha} $\in \{10^{-4}, 10^{-3}\}$, \texttt{lr} $\in \{0.001, 0.005\}$. \\
+  \medskip
+  ReLU \,·\, Adam \,·\, early stopping.
+  Tuned: \texttt{alpha} $\in \{10^{-4}, 10^{-3}\}$, \texttt{lr} $\in \{0.001, 0.005\}$.
   Best for both: $\alpha = 10^{-3}$, \texttt{lr} $= 0.005$.
 
-  \bigskip
-  \normalsize
+  \medskip
   \hp{Key takeaways}
   \begin{itemize}
     \item Depth doesn't help: $0.7405$ vs $0.7416$  (within noise).
@@ -327,8 +325,6 @@ $\Rightarrow$ severe class imbalance
     \item Threshold tuning at 0.139 lifts recall to \hi{41\%}.
   \end{itemize}
 
-  \medskip
-  \small
   \begin{center}{\color{accent}\itshape Threshold $>$ resampling.}\end{center}
 \end{frame}
 
