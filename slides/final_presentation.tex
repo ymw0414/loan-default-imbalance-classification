@@ -277,7 +277,42 @@ $\Rightarrow$ severe class imbalance
 \end{frame}
 
 
-% ---------- Slide 9 — Combined Leaderboard (Minwoo) ----------
+% ---------- Slide 9 — Imbalance Handling (Minwoo, leakage-fixed) ----------
+\begin{frame}{Imbalance Handling on the Best MLP}
+
+\scriptsize
+
+\textbf{Three strategies compared} (sklearn \texttt{MLPClassifier} does not support \texttt{class\_weight})
+
+\begin{tabular}{@{}lcccccc@{}}
+    \toprule
+    \hp{Method}              & \hp{Threshold} & \hp{ROC AUC} & \hp{PR AUC} & \hp{Precision} & \hp{Recall} & \hp{F1} \\
+    \midrule
+    Baseline                 & 0.500 & 0.742 & 0.217 & 0.00 & 0.00 & 0.00 \\
+    SMOTE                    & 0.500 & {\color{warn}\textbf{0.648}} & 0.134 & 0.16 & 0.21 & 0.18 \\
+    Threshold tuning $\star$ & 0.139 & 0.742 & 0.217 & 0.22 & \hi{\textbf{0.41}} & \textbf{0.29} \\
+    \bottomrule
+\end{tabular}
+
+\vspace{0.2cm}
+
+\textbf{Key takeaways}
+\begin{itemize}
+    \item Baseline at 0.5: AUC 0.742 but recall \hi{0\%}
+    \item SMOTE hurts: AUC drops 0.09
+    \item Threshold tuning at 0.139 lifts recall to \hi{41\%}
+\end{itemize}
+
+\vspace{0.1cm}
+
+\begin{block}{Headline}
+Choosing the threshold matters more than rebalancing the data.
+\end{block}
+
+\end{frame}
+
+
+% ---------- Slide 10 — Combined Leaderboard (Minwoo) ----------
 \begin{frame}{Combined Leaderboard}
 
 \footnotesize
@@ -311,7 +346,7 @@ Tree boosting wins by $\sim$1 AUC point — consistent with the literature on ta
 \end{frame}
 
 
-% ---------- Slide 10 — Why NN Underperforms (Minwoo) ----------
+% ---------- Slide 11 — Why NN Underperforms (Minwoo) ----------
 \begin{frame}{Why NN Underperforms on Tabular Data}
 
 \scriptsize
@@ -348,41 +383,6 @@ Tree boosting wins by $\sim$1 AUC point — consistent with the literature on ta
 \begin{block}{Consensus in the literature}
 Tree-based models still outperform deep learning on tabular data
 (Grinsztajn et al., NeurIPS 2022).
-\end{block}
-
-\end{frame}
-
-
-% ---------- Slide 11 — Imbalance Handling (Minwoo, leakage-fixed) ----------
-\begin{frame}{Imbalance Handling on the Best MLP}
-
-\scriptsize
-
-\textbf{Three strategies compared} (sklearn \texttt{MLPClassifier} does not support \texttt{class\_weight})
-
-\begin{tabular}{@{}lcccccc@{}}
-    \toprule
-    \hp{Method}              & \hp{Threshold} & \hp{ROC AUC} & \hp{PR AUC} & \hp{Precision} & \hp{Recall} & \hp{F1} \\
-    \midrule
-    Baseline                 & 0.500 & 0.742 & 0.217 & 0.00 & 0.00 & 0.00 \\
-    SMOTE                    & 0.500 & {\color{warn}\textbf{0.648}} & 0.134 & 0.16 & 0.21 & 0.18 \\
-    Threshold tuning $\star$ & 0.139 & 0.742 & 0.217 & 0.22 & \hi{\textbf{0.41}} & \textbf{0.29} \\
-    \bottomrule
-\end{tabular}
-
-\vspace{0.2cm}
-
-\textbf{Key takeaways}
-\begin{itemize}
-    \item Baseline at 0.5: AUC 0.742 but recall \hi{0\%}
-    \item SMOTE hurts: AUC drops 0.09
-    \item Threshold tuning at 0.139 lifts recall to \hi{41\%}
-\end{itemize}
-
-\vspace{0.1cm}
-
-\begin{block}{Headline}
-Choosing the threshold matters more than rebalancing the data.
 \end{block}
 
 \end{frame}
