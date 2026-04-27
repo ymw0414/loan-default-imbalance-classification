@@ -311,7 +311,49 @@ Tree boosting wins by $\sim$1 AUC point — consistent with the literature on ta
 \end{frame}
 
 
-% ---------- Slide 10 — Imbalance Handling (Minwoo, leakage-fixed) ----------
+% ---------- Slide 10 — Why NN Underperforms (Minwoo) ----------
+\begin{frame}{Why NN Underperforms on Tabular Data}
+
+\scriptsize
+
+\textbf{Both MLPs land below LR / RF / HGBC.\quad Why?}
+
+\vspace{0.15cm}
+
+\textbf{1. Tabular favors trees, not NN}
+\begin{itemize}
+    \item NN excels on image, text, audio — continuous, structured inputs
+    \item Trees split on individual features cleanly; NN must weight all features at once
+\end{itemize}
+
+\textbf{2. Feature signal is already linear-friendly}
+\begin{itemize}
+    \item \texttt{EXT\_SOURCE\_1/2/3} are pre-engineered credit scores
+    \item LR uses them directly; trees split on them directly
+    \item NN must rediscover the linear relationship through nonlinear layers
+\end{itemize}
+
+\textbf{3. One-hot encoding penalizes NN}
+\begin{itemize}
+    \item 16 categorical columns $\to$ 140 sparse 0/1 columns (70\% of features)
+    \item Trees handle sparse binary inputs natively; MLP must learn weights on all of them
+\end{itemize}
+
+\textbf{4. sklearn MLP has no \texttt{class\_weight}}
+\begin{itemize}
+    \item LR and RF apply \texttt{class\_weight='balanced'} directly in the loss
+    \item MLP can only rely on resampling (SMOTE) or post-hoc threshold tuning
+\end{itemize}
+
+\begin{block}{Consensus in the literature}
+Tree-based models still outperform deep learning on tabular data
+(Grinsztajn et al., NeurIPS 2022).
+\end{block}
+
+\end{frame}
+
+
+% ---------- Slide 11 — Imbalance Handling (Minwoo, leakage-fixed) ----------
 \begin{frame}{Imbalance Handling on the Best MLP}
 
 \scriptsize
@@ -346,7 +388,7 @@ Choosing the threshold matters more than rebalancing the data.
 \end{frame}
 
 
-% ---------- Slide 11 — Conclusions ----------
+% ---------- Slide 12 — Conclusions ----------
 \begin{frame}{Conclusions}
 
 \scriptsize
@@ -378,7 +420,7 @@ Choosing the threshold matters more than rebalancing the data.
 \end{frame}
 
 
-% ---------- Slide 12 — Recording ----------
+% ---------- Slide 13 — Recording ----------
 \begin{frame}{Recording}
 \vfill
 \begin{center}
