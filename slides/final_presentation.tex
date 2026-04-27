@@ -369,11 +369,6 @@ Tree boosting wins by $\sim$1 AUC point — consistent with the literature on ta
     \item Trees handle sparse binary inputs natively; MLP must learn weights on all
 \end{itemize}
 
-\textbf{4. sklearn MLP has no \texttt{class\_weight}}
-\begin{itemize}
-    \item LR / RF apply \texttt{class\_weight='balanced'} in the loss; MLP cannot
-\end{itemize}
-
 \begin{block}{Consensus in the literature}
 Tree-based models still outperform deep learning on tabular data
 (Grinsztajn et al., NeurIPS 2022).
