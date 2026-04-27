@@ -1,6 +1,8 @@
 % =====================================================================
-% Final-project presentation deck (9 slides, 16:9)
-% Keyword-focused, no cutoffs.
+% Final-project presentation deck (12 slides, 16:9)
+% Front-half (slides 2-7) authored by Nathaniel Badalov.
+% Back-half (slides 8-12) carries Minwoo's NN + imbalance experiments
+% with the leakage-free numbers from Nathaniel's review.
 % =====================================================================
 \documentclass[aspectratio=169,11pt]{beamer}
 
@@ -49,72 +51,205 @@
 % --------------------------- Slide 1 — Title ---------------------------
 \maketitle
 
-% --------------------------- Slide 2 — Problem & Motivation ---------------------------
-\begin{frame}{Problem \& Motivation}
-  \begin{description}[Challenge]
-    \item[\hp{Task}]      Binary classification — predict loan default  (\texttt{TARGET} $\in \{0, 1\}$)
-    \item[\hp{Data}]      307{,}511 applicants $\times$ 122 features  (Kaggle)
-    \item[\hp{Challenge}] only \hi{8.07\%} default $\Rightarrow$ severe class imbalance
-    \item[\hp{Approach}]  5 models  (3 classic ML + 2 NN)  +  imbalance handling on best NN
-    \item[\hp{Metric}]    ROC AUC  (accuracy is misleading on imbalanced data)
-  \end{description}
 
-  \medskip
-  \begin{center}
-    {\color{accent}\itshape Research question: do classic ML and NN respond differently to imbalance handling?}
-  \end{center}
+% ---------- Slide 2 — Business Problem and Motivation (Nathaniel) ----------
+\begin{frame}{Business Problem and Motivation}
+
+\textbf{Goal}
+
+Predict the probability that a loan applicant will default before making a lending decision.
+
+\vspace{0.4cm}
+
+\textbf{Why it matters}
+\begin{itemize}
+    \item False negatives: approve borrowers who default
+    \item False positives: reject creditworthy borrowers
+    \item Models help balance risk vs. profitability
+\end{itemize}
+
+\vspace{0.4cm}
+
+\begin{block}{Key challenge}
+Default events are rare (\textasciitilde 8\%) $\Rightarrow$ strong class imbalance
+\end{block}
+
 \end{frame}
 
-% --------------------------- Slide 3 — Dataset ---------------------------
-\begin{frame}{Dataset · Home Credit Default Risk}
-  \begin{columns}[T,onlytextwidth]
-    \column{0.48\textwidth}
-      \small
-      \begin{description}[Observations]
-        \item[\hp{Structure}]    Tabular — row $=$ one applicant
-        \item[\hp{Obs.}]         307{,}511 train  /  48{,}744 test
-        \item[\hp{Features}]     122  (102 numeric, 16 categorical)
-        \item[\hp{Target}]       \texttt{TARGET} $\in \{0, 1\}$\,;\, 1 $=$ default
-        \item[\hp{Imbalance}]    \hi{8.07\%} default rate
-      \end{description}
 
-      \medskip
-      \hp{Strongest signals}
-      \begin{itemize}\footnotesize
-        \item \texttt{EXT\_SOURCE\_1/2/3}  external credit scores
-        \item Demographics, employment, credit bureau
-      \end{itemize}
+% ---------- Slide 3 — From Imbalance to Research Question (Nathaniel) ----------
+\begin{frame}{From Imbalance to Research Question}
 
-    \column{0.50\textwidth}
-      \vspace{-0.3em}
-      \includegraphics[width=\linewidth]{../result/home_credit/figure/class_balance.png}
-  \end{columns}
+\textbf{Why imbalance matters}
+\begin{itemize}
+    \item Models can achieve high ROC AUC but still predict no defaults
+    \item Default threshold (0.5) often fails in imbalanced settings
+\end{itemize}
+
+\vspace{0.35cm}
+
+\textbf{Common solutions}
+\begin{itemize}
+    \item Reweighting the loss (class weights)
+    \item Resampling the data (e.g., SMOTE)
+    \item Adjusting the decision threshold
+\end{itemize}
+
+\vspace{0.35cm}
+
+\begin{block}{Research Question}
+\begin{itemize}
+    \item Do neural networks respond to class imbalance handling techniques the same way as classic shallow learners?
+\end{itemize}
+
+\end{block}
+
+\vspace{0.2cm}
+
+\textbf{Models compared}\vspace{0.15cm}
+\begin{itemize}
+    \item Logistic Regression, Random Forest, HistGradientBoosting
+    \item Shallow and Deep MLP
+\end{itemize}
+
 \end{frame}
 
-% --------------------------- Slide 4 — Classic ML ---------------------------
-\begin{frame}{Classic ML Models}
-  \small
-  \begin{tabularx}{\textwidth}{@{}l L r@{}}
+
+% ---------- Slide 4 — Dataset Overview (Nathaniel) ----------
+\begin{frame}{Dataset Overview}
+
+\textbf{What the dataset represents}
+\begin{itemize}
+    \item Loan applications from Home Credit
+    \item Focus on borrowers with limited credit history
+    \item Tabular structure (Each row = one applicant)
+    \item Goal: predict default risk
+\end{itemize}
+
+\vspace{0.2cm}
+
+\textbf{Main feature groups}
+\begin{itemize}
+    \item Demographics (age, family status)
+    \item Employment and income
+    \item Loan details (amount, annuity)
+    \item External credit scores: \texttt{EXT\_SOURCE\_*}
+\end{itemize}
+
+\end{frame}
+
+
+% ---------- Slide 5 — Data Structure and Class Imbalance (Nathaniel) ----------
+\begin{frame}{Data Structure and Class Imbalance}
+
+\begin{columns}[T,onlytextwidth]
+
+\column{0.5\textwidth}
+
+\textbf{Dataset characteristics}
+\begin{itemize}
+    \item Train data: \textbf{307,511}
+    \item Test data: \textbf{48,744}
+    \item Features: \textbf{122}
+\end{itemize}
+
+\vspace{0.2cm}
+
+\textbf{Target variable}
+\begin{itemize}
+    \item \texttt{1}: default
+    \item \texttt{0}: repaid
+\end{itemize}
+
+\vspace{0.2cm}
+
+\begin{block}{Class imbalance}
+Defaults: only \textbf{8.07\%} default\\
+$\Rightarrow$ severe class imbalance
+\end{block}
+
+\column{0.5\textwidth}
+
+\centering
+\includegraphics[width=\linewidth]{../result/home_credit/figure/class_balance.png}
+
+\end{columns}
+
+\end{frame}
+
+
+% ---------- Slide 6 — Classic ML Strategy (Nathaniel) ----------
+\begin{frame}{Classic ML Strategy}
+
+\footnotesize
+
+\textbf{Why start with classic ML?}
+\begin{itemize}
+    \item The data is tabular: rows are applicants, columns are features
+    \item Classical models are strong baselines for tabular prediction
+    \item They provide a benchmark for the neural networks
+\end{itemize}
+
+\vspace{0.2cm}
+
+\textbf{Models tested}
+\begin{itemize}
+    \item \textbf{Logistic Regression}: strong baseline for probability prediction
+    \item \textbf{Random Forest}: captures nonlinear patterns and reduces overfitting
+    \item \textbf{Histogram Gradient Boosting}: captures complex interactions efficiently
+\end{itemize}
+
+\vspace{0.2cm}
+
+\begin{block}{Handling class imbalance}
+\begin{itemize}
+    \item Logistic Regression and Random Forest give more weight to default cases (\texttt{class\_weight='balanced'}).
+    \item Histogram Gradient Boosting used without class weights (boosting still captures rare cases well).
+\end{itemize}
+\end{block}
+
+\end{frame}
+
+
+% ---------- Slide 7 — Classic ML Results (Nathaniel) ----------
+\begin{frame}{Classic ML Results}
+
+\small
+\begin{tabularx}{\textwidth}{@{}l L r@{}}
     \toprule
-    \hp{Model}             & \hp{Best hyperparameters}                                                & \hp{Val AUC} \\
+    \hp{Model} & \hp{Best hyperparameters} & \hp{Val ROC AUC} \\
     \midrule
-    Logistic Regression    & \texttt{C}=0.1; \texttt{class\_weight=balanced}                          & 0.7487 \\[0.2em]
-    Random Forest          & \texttt{n\_estimators}=200; \texttt{leaf}-regularized; \texttt{balanced} & 0.7470 \\[0.2em]
-    HistGradientBoosting   & \texttt{lr}=0.05; \texttt{max\_iter}=200; \texttt{leaf}=100              & \hi{\textbf{0.7595}} \\
+    HistGradientBoosting
+        & \texttt{learning\_rate}=0.05; \texttt{max\_iter}=200; \texttt{leaf}=100
+        & \hi{\textbf{0.7595}} \\[0.2em]
+    Logistic Regression
+        & \texttt{C}=0.1; \texttt{tol}=1e-5; \texttt{class\_weight=balanced}
+        & 0.7487 \\[0.2em]
+    Random Forest
+        & \texttt{n\_estimators}=200; \texttt{min\_leaf}=1; \texttt{balanced}
+        & 0.7470 \\
     \bottomrule
-  \end{tabularx}
+\end{tabularx}
 
-  \bigskip
-  \normalsize
-  \hp{Key takeaways}
-  \begin{itemize}
-    \item HGBC wins by $\sim$1 AUC point — boosted trees dominate tabular.
-    \item \texttt{class\_weight='balanced'} on LR / RF handles imbalance in the loss.
-    \item RF overfits at \texttt{leaf=1}: train 0.96 vs val 0.747.
-  \end{itemize}
+\vspace{0.35cm}
+
+\textbf{Key takeaways}
+\begin{itemize}
+    \item Histogram Gradient Boosting performs best (0.7595), suggesting boosted trees capture nonlinear interactions in tabular data effectively.
+
+    \item Logistic Regression and Random Forest perform similarly, indicating strong linear signal alongside moderate nonlinearities.
+
+    \item Random Forest shows signs of overfitting (train 0.96 vs val 0.747), while boosting remains more stable.
+\end{itemize}
+
 \end{frame}
 
-% --------------------------- Slide 5 — Neural Network ---------------------------
+
+% ====================================================================
+%  Back half — NN + imbalance + conclusions (post-leakage-fix numbers)
+% ====================================================================
+
+% --------------------------- Slide 8 — Neural Network Models ---------------------------
 \begin{frame}{Neural Network Models}
   \begin{tabularx}{\textwidth}{@{}l c c r@{}}
     \toprule
@@ -141,7 +276,7 @@
   \end{itemize}
 \end{frame}
 
-% --------------------------- Slide 6 — Combined ---------------------------
+% --------------------------- Slide 9 — Combined Leaderboard ---------------------------
 \begin{frame}{Combined Leaderboard}
   \begin{columns}[T,onlytextwidth]
     \column{0.62\textwidth}
@@ -168,7 +303,7 @@
   \end{columns}
 \end{frame}
 
-% --------------------------- Slide 7 — Imbalance ---------------------------
+% --------------------------- Slide 10 — Imbalance Handling (leakage-fixed) ---------------------------
 \begin{frame}{Imbalance Handling on the Best MLP}
   \centering
   \footnotesize
@@ -197,7 +332,7 @@
   \begin{center}{\color{accent}\itshape Threshold $>$ resampling.}\end{center}
 \end{frame}
 
-% --------------------------- Slide 8 — Conclusions ---------------------------
+% --------------------------- Slide 11 — Conclusions ---------------------------
 \begin{frame}{Conclusions}
   \scriptsize
   \hp{Best model overall}
@@ -223,7 +358,7 @@
   \end{itemize}
 \end{frame}
 
-% --------------------------- Slide 9 — Recording ---------------------------
+% --------------------------- Slide 12 — Recording ---------------------------
 \begin{frame}{Recording}
   \vfill
   \begin{center}
