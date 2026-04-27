@@ -247,7 +247,7 @@ $\Rightarrow$ severe class imbalance
 % ---------- Slide 8 — Neural Network Models (Minwoo) ----------
 \begin{frame}{Neural Network Models}
 
-\footnotesize
+\scriptsize
 
 \textbf{Architectures tested}
 \begin{tabularx}{\textwidth}{@{}l c c r@{}}
@@ -259,16 +259,12 @@ $\Rightarrow$ severe class imbalance
     \bottomrule
 \end{tabularx}
 
-\vspace{0.2cm}
-
 \textbf{Common setup}
 \begin{itemize}
     \item ReLU activation, Adam optimizer, early stopping
     \item Tuned over \texttt{alpha} $\in \{10^{-4}, 10^{-3}\}$, \texttt{lr\_init} $\in \{0.001, 0.005\}$
     \item Best for both: $\alpha = 10^{-3}$, \texttt{lr} $= 0.005$
 \end{itemize}
-
-\vspace{0.15cm}
 
 \begin{block}{Key takeaways}
 \begin{itemize}
