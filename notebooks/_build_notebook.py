@@ -16,12 +16,21 @@ def code(text):
 # =====================================================================
 # 1. Title & Introduction
 # =====================================================================
-md("""# Loan Default Prediction with Neural Networks: A Class Imbalance Study
+md("""# Loan Default Prediction: Comparing Classic ML and Neural Networks under Class Imbalance
 
-Companion notebook focusing on **neural network models** (shallow & deep MLP) for
-the Home Credit Default Risk problem. Pipeline is intentionally aligned with the
-classic-ML companion notebook (Logistic Regression / Random Forest / Histogram
-Gradient Boosting) so that results across the two notebooks are directly comparable.""")
+**Team:** Minwoo Yoo · Nathan
+**Dataset:** Home Credit Default Risk (Kaggle)
+
+This notebook is the **combined final report**. It walks through the full
+pipeline -- shared preprocessing, classic shallow learners (Logistic
+Regression, Random Forest, Histogram Gradient Boosting), shallow & deep
+neural networks, and a focused study of how each family responds to class
+imbalance handling.
+
+**Authorship of each section is marked inline.** The classic-ML hyperparameter
+tuning was driven by Nathan; the neural-network hyperparameter tuning and
+the imbalance-handling deep dive were driven by Minwoo. EDA, preprocessing,
+combined results and the conclusion were written jointly.""")
 
 md("""## Introduction
 
