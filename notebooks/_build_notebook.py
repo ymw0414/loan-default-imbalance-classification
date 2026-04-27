@@ -392,11 +392,129 @@ X_test  = ss.transform(X_test)
 print('after scaling -- mean:', X_train.mean().round(4), '  std:', X_train.std().round(4))""")
 
 # =====================================================================
-# 4. Hyperparameter Tuning - Neural Networks
+# 4. Hyperparameter Tuning -- Classic ML  (Nathan)
+# =====================================================================
+md("""# Hyperparameter Tuning -- Classic ML
+
+> **Author:** Nathan
+>
+> Three classic shallow learners compared: Logistic Regression (linear),
+> Random Forest (tree bagging), and HistGradientBoosting (tree boosting).
+> All wrapped in the same `Pipeline` and tuned with the same `GridSearchCV`
+> over the predefined train/val split, scoring on ROC AUC.""")
+
+md("## Models")
+code("""from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier, HistGradientBoostingClassifier
+from sklearn.pipeline import Pipeline
+from sklearn.base import clone   # used by the NN smart-skip block below
+
+classic_models = {
+    'lr':   LogisticRegression(class_weight='balanced', random_state=random_seed, max_iter=200),
+    'rfc':  RandomForestClassifier(class_weight='balanced', random_state=random_seed),
+    'hgbc': HistGradientBoostingClassifier(random_state=random_seed),
+}
+
+classic_pipes = {acronym: Pipeline([('model', m)]) for acronym, m in classic_models.items()}""")
+
+md("## Predefined train/val split (shared with the NN section)")
+code("""# Combines train+val into one array; PredefinedSplit tells GridSearchCV
+# to use the val portion as the validation fold (no random k-fold).
+X_train_val, y_train_val, ps = get_train_val_ps(X_train, y_train, X_val, y_val)
+print('combined train+val:', X_train_val.shape)""")
+
+md("""## Hyperparameter grids
+
+Same grids Nathan used in his standalone notebook. Random Forest is the slowest
+of the three (full grid takes ~10 minutes); a smart-skip block below loads
+existing CSVs from disk if they're already there to avoid re-running.""")
+
+code("""classic_param_grids = {
+    'lr': [{
+        'model__tol': [1e-5, 1e-4, 1e-3],
+        'model__C':   [0.01, 0.1, 1, 10],
+    }],
+    'rfc': [{
+        'model__n_estimators':      [100, 200],
+        'model__min_samples_split': [2, 20, 100],
+        'model__min_samples_leaf':  [1, 20, 100],
+    }],
+    'hgbc': [{
+        'model__learning_rate':    [0.01, 0.05, 0.1],
+        'model__max_iter':         [100, 200],
+        'model__min_samples_leaf': [20, 100],
+    }],
+}""")
+
+md("""## Running `GridSearchCV` on the classic models
+
+If the result CSV for a model already exists on disk we *load it* instead of
+retraining. This makes re-runs fast (the heavy lifting only happens once).
+Delete the CSV files in `result/home_credit/cv_results/GridSearchCV/` to force
+a full retrain.""")
+
+code("""from sklearn.model_selection import GridSearchCV
+
+classic_results = []   # [best_score, best_params_dict, best_estimator_or_None]
+cv_dir = result_dir + 'cv_results/GridSearchCV/'
+
+for acronym in classic_pipes.keys():
+    csv_path = cv_dir + acronym + '.csv'
+    if os.path.exists(csv_path):
+        # ---- skip retraining: load best-row from existing CSV ----
+        df_cv = pd.read_csv(csv_path).sort_values('rank_test_score').head(1)
+        best_score  = float(df_cv['mean_test_score'].iloc[0])
+        # 'params' column is a stringified dict; eval is acceptable here because
+        # it was written by us in the same notebook
+        import ast
+        best_params = ast.literal_eval(df_cv['params'].iloc[0])
+        classic_results.append([best_score, best_params, None])
+        print(f'{acronym}: loaded from {csv_path}  (best ROC AUC = {best_score:.4f})')
+    else:
+        print(f'\\n>>> tuning {acronym} ...')
+        gs = GridSearchCV(
+            estimator=classic_pipes[acronym],
+            param_grid=classic_param_grids[acronym],
+            scoring='roc_auc',
+            n_jobs=2,
+            cv=ps,
+            return_train_score=True,
+            verbose=1,
+        )
+        gs = gs.fit(X_train_val, y_train_val)
+        classic_results.append([gs.best_score_, gs.best_params_, gs.best_estimator_])
+
+        cv_results = pd.DataFrame.from_dict(gs.cv_results_).sort_values(
+            by=['rank_test_score', 'std_test_score']
+        )
+        important_cols = [
+            'rank_test_score', 'mean_test_score', 'std_test_score',
+            'mean_train_score', 'std_train_score',
+            'mean_fit_time', 'std_fit_time',
+            'mean_score_time', 'std_score_time',
+        ]
+        cv_results = cv_results[
+            important_cols + sorted(list(set(cv_results.columns) - set(important_cols)))
+        ]
+        cv_results.to_csv(csv_path, index=False)
+        print(f'    best ROC AUC = {gs.best_score_:.4f}')
+        print(f'    best params  = {gs.best_params_}')""")
+
+md("## Classic ML leaderboard")
+code("""classic_leaderboard = pd.DataFrame(
+    [{'model': name, 'best_val_AUC': round(s, 4), 'best_params': p}
+     for name, (s, p, _) in zip(['lr', 'rfc', 'hgbc'], classic_results)]
+).sort_values('best_val_AUC', ascending=False).reset_index(drop=True)
+classic_leaderboard""")
+
+# =====================================================================
+# 5. Hyperparameter Tuning - Neural Networks  (Minwoo)
 # =====================================================================
 md("""# Hyperparameter Tuning -- Neural Networks
 
-Two architectures, both implemented with `sklearn.neural_network.MLPClassifier`.
+> **Author:** Minwoo
+>
+> Two architectures, both implemented with `sklearn.neural_network.MLPClassifier`.
 
 | Model | Architecture | Course slide |
 |---|---|---|
@@ -409,7 +527,7 @@ training automatically halts when the validation loss stops improving.""")
 md("## Creating the dictionary of models")
 code("""from sklearn.neural_network import MLPClassifier
 
-models = {
+nn_models = {
     'shallow_mlp': MLPClassifier(
         hidden_layer_sizes=(64,),
         activation='relu',
@@ -426,96 +544,101 @@ models = {
         max_iter=100,
         random_state=random_seed,
     ),
-}""")
+}
 
-md("## Wrapping the models in `Pipeline`")
-code("""from sklearn.pipeline import Pipeline
-
-pipes = {acronym: Pipeline([('model', m)]) for acronym, m in models.items()}""")
-
-md("## Predefined split cross-validator")
-code("""# Combines train+val into one array; PredefinedSplit tells GridSearchCV
-# to use the val portion as the validation fold (no random k-fold).
-X_train_val, y_train_val, ps = get_train_val_ps(X_train, y_train, X_val, y_val)
-print('combined train+val:', X_train_val.shape)""")
+nn_pipes = {acronym: Pipeline([('model', m)]) for acronym, m in nn_models.items()}""")
 
 md("""## Hyperparameter grids
 
 Kept small on purpose -- each MLP fit on ~245k rows with ~200 features is not
 cheap, and we have a one-day deadline.""")
 
-code("""param_grids = {}
+code("""nn_param_grids = {
+    'shallow_mlp': [{
+        'model__alpha':              [1e-4, 1e-3],
+        'model__learning_rate_init': [0.001, 0.005],
+    }],
+    'deep_mlp': [{
+        'model__alpha':              [1e-4, 1e-3],
+        'model__learning_rate_init': [0.001, 0.005],
+    }],
+}""")
 
-# Shallow MLP
-param_grids['shallow_mlp'] = [{
-    'model__alpha':              [1e-4, 1e-3],
-    'model__learning_rate_init': [0.001, 0.005],
-}]
+md("""## Running `GridSearchCV` on the NN models
 
-# Deep MLP
-param_grids['deep_mlp'] = [{
-    'model__alpha':              [1e-4, 1e-3],
-    'model__learning_rate_init': [0.001, 0.005],
-}]""")
+Same smart-skip pattern: if the model's CV CSV already exists on disk, we load
+the best row instead of retraining.""")
 
-md("## Running `GridSearchCV`")
-code("""from sklearn.model_selection import GridSearchCV
+code("""nn_results = []
 
-best_score_params_estimator_gs = []  # one entry per model: [score, params, estimator]
+for acronym in nn_pipes.keys():
+    csv_path = cv_dir + acronym + '.csv'
+    if os.path.exists(csv_path):
+        df_cv = pd.read_csv(csv_path).sort_values('rank_test_score').head(1)
+        best_score  = float(df_cv['mean_test_score'].iloc[0])
+        import ast
+        best_params = ast.literal_eval(df_cv['params'].iloc[0])
+        # Rebuild a fitted estimator with the best params so downstream sections
+        # (imbalance dive, submission) can use it without retraining the grid.
+        best_pipe = clone(nn_pipes[acronym])
+        best_pipe.set_params(**best_params)
+        best_pipe.fit(X_train_val, y_train_val)
+        nn_results.append([best_score, best_params, best_pipe])
+        print(f'{acronym}: loaded from {csv_path}  (best ROC AUC = {best_score:.4f})')
+    else:
+        print(f'\\n>>> tuning {acronym} ...')
+        gs = GridSearchCV(
+            estimator=nn_pipes[acronym],
+            param_grid=nn_param_grids[acronym],
+            scoring='roc_auc',
+            n_jobs=2,
+            cv=ps,
+            return_train_score=True,
+            verbose=1,
+        )
+        gs = gs.fit(X_train_val, y_train_val)
+        nn_results.append([gs.best_score_, gs.best_params_, gs.best_estimator_])
 
-for acronym in pipes.keys():
-    print(f'\\n>>> tuning {acronym} ...')
-    gs = GridSearchCV(
-        estimator=pipes[acronym],
-        param_grid=param_grids[acronym],
-        scoring='roc_auc',
-        n_jobs=2,
-        cv=ps,
-        return_train_score=True,
-        verbose=1,
-    )
-    gs = gs.fit(X_train_val, y_train_val)
-
-    best_score_params_estimator_gs.append([
-        gs.best_score_,
-        gs.best_params_,
-        gs.best_estimator_,
-    ])
-
-    cv_results = pd.DataFrame.from_dict(gs.cv_results_).sort_values(
-        by=['rank_test_score', 'std_test_score']
-    )
-    important_cols = [
-        'rank_test_score', 'mean_test_score', 'std_test_score',
-        'mean_train_score', 'std_train_score',
-        'mean_fit_time', 'std_fit_time',
-        'mean_score_time', 'std_score_time',
-    ]
-    cv_results = cv_results[
-        important_cols + sorted(list(set(cv_results.columns) - set(important_cols)))
-    ]
-    cv_results.to_csv(
-        result_dir + f'cv_results/GridSearchCV/{acronym}.csv',
-        index=False,
-    )
-
-    print(f'    best ROC AUC = {gs.best_score_:.4f}')
-    print(f'    best params  = {gs.best_params_}')""")
+        cv_results = pd.DataFrame.from_dict(gs.cv_results_).sort_values(
+            by=['rank_test_score', 'std_test_score']
+        )
+        important_cols = [
+            'rank_test_score', 'mean_test_score', 'std_test_score',
+            'mean_train_score', 'std_train_score',
+            'mean_fit_time', 'std_fit_time',
+            'mean_score_time', 'std_score_time',
+        ]
+        cv_results = cv_results[
+            important_cols + sorted(list(set(cv_results.columns) - set(important_cols)))
+        ]
+        cv_results.to_csv(csv_path, index=False)
+        print(f'    best ROC AUC = {gs.best_score_:.4f}')
+        print(f'    best params  = {gs.best_params_}')""")
 
 # =====================================================================
-# 5. Model Selection
+# 5. Model Selection (across all 5 models)
 # =====================================================================
-md("# Model Selection")
-code("""best_score_params_estimator_gs = sorted(
-    best_score_params_estimator_gs, key=lambda x: x[0], reverse=True
-)
+md("""# Model Selection -- All Five Models
 
-results_table = pd.DataFrame(
-    [[s, p] for s, p, _ in best_score_params_estimator_gs],
-    columns=['best_val_AUC', 'best_params'],
-    index=['rank_' + str(i+1) for i in range(len(best_score_params_estimator_gs))],
-)
-results_table""")
+Combines the classic-ML and neural-network results into one leaderboard.""")
+
+code("""all_results = []
+for name, (s, p, est) in zip(['Logistic Regression', 'Random Forest', 'HistGradientBoosting'],
+                              classic_results):
+    all_results.append({'model': name, 'family': 'classic',
+                        'best_val_AUC': round(s, 4), 'best_params': p, 'estimator': est})
+for name, (s, p, est) in zip(['Shallow MLP', 'Deep MLP'], nn_results):
+    all_results.append({'model': name, 'family': 'neural net',
+                        'best_val_AUC': round(s, 4), 'best_params': p, 'estimator': est})
+
+leaderboard = pd.DataFrame(all_results).sort_values('best_val_AUC', ascending=False).reset_index(drop=True)
+leaderboard[['model', 'family', 'best_val_AUC', 'best_params']]""")
+
+md("""## Best-of-each-family
+
+A useful sanity check: the strongest representative of each model family.""")
+
+code("""leaderboard.groupby('family').apply(lambda g: g.nlargest(1, 'best_val_AUC'))[['model', 'best_val_AUC']]""")
 
 # =====================================================================
 # 6. Imbalance Handling Comparison (Bonus)
@@ -543,20 +666,18 @@ precision/recall/F1 at each method's chosen threshold.
 > and Random Forest.""")
 
 md("## Picking the best MLP architecture")
-code("""# Use the higher-AUC architecture from the GridSearchCV run above.
-best_score, best_params, best_estimator = best_score_params_estimator_gs[0]
-print('Best NN architecture from grid search:')
-print('  AUC   :', round(best_score, 4))
-print('  params:', best_params)
+code("""# Pick the higher-AUC of the two NN architectures.
+nn_sorted = sorted(nn_results, key=lambda x: x[0], reverse=True)
+best_score, best_params, best_estimator = nn_sorted[0]
 
-# Identify which acronym this corresponds to (shallow vs deep)
-best_acronym = None
-for acronym, p in pipes.items():
-    if type(p.named_steps['model']) is type(best_estimator.named_steps['model']):
-        if p.named_steps['model'].hidden_layer_sizes == best_estimator.named_steps['model'].hidden_layer_sizes:
-            best_acronym = acronym
-            break
-print('  -> picking architecture:', best_acronym)""")
+print('Best NN from grid search:')
+print('  val ROC AUC:', round(best_score, 4))
+print('  params     :', best_params)
+
+# Identify shallow vs deep
+arch = best_estimator.named_steps['model'].hidden_layer_sizes
+print('  hidden     :', arch,
+      '(shallow)' if len(arch) == 1 else '(deep)')""")
 
 md("## Helper: evaluation metrics")
 code("""from sklearn.metrics import (
