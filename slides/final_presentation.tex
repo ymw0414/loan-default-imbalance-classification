@@ -1,6 +1,6 @@
 % =====================================================================
 % Final-project presentation deck (9 slides, 16:9)
-% Compile:  pdflatex final_presentation.tex   (twice for cross-refs)
+% Keyword-focused, no cutoffs.
 % =====================================================================
 \documentclass[aspectratio=169,11pt]{beamer}
 
@@ -14,10 +14,9 @@
 \usepackage{tabularx}
 \usepackage{appendixnumberbeamer}
 
-% --- palette ---
-\definecolor{primary}{HTML}{1A365D}     % deep navy
-\definecolor{accent}{HTML}{D97706}      % orange — RESERVED for the few critical findings
-\definecolor{warn}{HTML}{B91C1C}        % red — only "this hurt" callout
+\definecolor{primary}{HTML}{1A365D}
+\definecolor{accent}{HTML}{D97706}
+\definecolor{warn}{HTML}{B91C1C}
 \definecolor{muted}{HTML}{6B7280}
 
 \setbeamercolor{title}{fg=primary}
@@ -29,18 +28,18 @@
 \setbeamercolor{itemize subitem}{fg=primary}
 \setbeamercolor{alerted text}{fg=accent}
 
-\newcommand{\hi}[1]{{\color{accent}\textbf{#1}}}      % orange — sparing only
-\newcommand{\hp}[1]{{\color{primary}\textbf{#1}}}     % navy — table headers / labels
+\newcommand{\hi}[1]{{\color{accent}\textbf{#1}}}
+\newcommand{\hp}[1]{{\color{primary}\textbf{#1}}}
 
-% Tabularx column types: centered, right-aligned variants
-\newcolumntype{C}{>{\centering\arraybackslash}X}
-\newcolumntype{R}{>{\raggedleft\arraybackslash}X}
+% Force X columns to be top-aligned (tabularx default is centered)
+\renewcommand{\tabularxcolumn}[1]{p{#1}}
 \newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\newcolumntype{C}{>{\centering\arraybackslash}X}
 
 \title{Loan Default Prediction}
 \subtitle{Comparing Classic ML and Neural Networks under Class Imbalance}
 \author{Minwoo Yoo \and Nathaniel Badalov}
-\institute{Home Credit Default Risk · Kaggle}
+\institute{Final Project Group 15 \ ·\  Home Credit Default Risk (Kaggle)}
 \date{}
 
 % =====================================================================
@@ -52,99 +51,90 @@
 
 % --------------------------- Slide 2 — Problem & Motivation ---------------------------
 \begin{frame}{Problem \& Motivation}
-  \centering
-  \begin{tabularx}{0.92\textwidth}{@{}p{2.4cm} L@{}}
+  \small
+  \begin{tabularx}{\textwidth}{@{}p{2.2cm} L@{}}
     \toprule
-    \hp{Task}        & \textbf{Binary classification} — predict whether a Home Credit applicant defaults  (\texttt{TARGET} $\in \{0, 1\}$). \\[0.4em]
-    \hp{Data}        & 307{,}511 applicants $\times$ 122 features  (Kaggle, real-world). \\[0.4em]
-    \hp{Challenge}   & Severe class imbalance — only \hi{8.07\%} default; a ``predict-no-default'' baseline scores 92\% accuracy with 0\% recall. \\[0.4em]
-    \hp{Approach}    & Compare classic ML (LR, RF, HGBC) and neural networks (Shallow / Deep MLP) under the same pipeline; then study imbalance-handling on the best NN. \\[0.4em]
-    \hp{Metric}      & ROC AUC  (accuracy is misleading on imbalanced data). \\
+    \hp{Task}      & Binary classification — predict loan default  (\texttt{TARGET} $\in \{0, 1\}$) \\
+    \hp{Data}      & 307{,}511 applicants $\times$ 122 features  (Kaggle) \\
+    \hp{Challenge} & only \hi{8.07\%} default $\Rightarrow$ severe class imbalance \\
+    \hp{Approach}  & 5 models  (3 classic ML + 2 NN)  + imbalance handling on best NN \\
+    \hp{Metric}    & ROC AUC  (accuracy is misleading on imbalanced data) \\
+    \hp{Question}  & {\color{accent}\itshape Do classic ML and NN respond differently to imbalance handling?} \\
     \bottomrule
   \end{tabularx}
-
-  \bigskip
-  \begin{center}
-    \itshape Research question: do classic shallow learners and neural networks\\[0.1em]
-    respond differently to class imbalance handling?
-  \end{center}
 \end{frame}
 
 % --------------------------- Slide 3 — Dataset ---------------------------
 \begin{frame}{Dataset · Home Credit Default Risk}
   \begin{columns}[T,onlytextwidth]
-    \column{0.46\textwidth}
-      \small
-      \begin{tabular}{@{}p{2.6cm}p{4.0cm}@{}}
+    \column{0.48\textwidth}
+      \footnotesize
+      \begin{tabularx}{\linewidth}{@{}p{2.2cm} L@{}}
         \toprule
-        \hp{Structure}     & Tabular  (row $=$ one applicant) \\
-        \hp{Observations}  & 307{,}511 train  /  48{,}744 test \\
-        \hp{Features}      & 122 columns\newline (102 numeric, 16 categorical) \\
-        \hp{Target}        & \texttt{TARGET} $\in \{0, 1\}$\newline 1 $=$ default,\, 0 $=$ repaid \\
-        \hp{Imbalance}     & default rate $=$ \hi{8.07\%} \\
+        \hp{Structure}    & Tabular — row $=$ one applicant \\
+        \hp{Observations} & 307{,}511 train  /  48{,}744 test \\
+        \hp{Features}     & 122  (102 numeric, 16 categorical) \\
+        \hp{Target}       & \texttt{TARGET} $\in \{0, 1\}$\,;\, 1 $=$ default \\
+        \hp{Imbalance}    & \hi{8.07\%} default rate \\
         \bottomrule
-      \end{tabular}
+      \end{tabularx}
 
-      \bigskip
-      \normalsize
-      \hp{Feature themes}
-      \begin{itemize}\small
-        \item Demographics, employment, credit-bureau summaries, requested loan amount
-        \item \texttt{EXT\_SOURCE\_1/2/3} external credit scores  (strongest signals)
+      \medskip
+      \small
+      \hp{Strongest signals}
+      \begin{itemize}\footnotesize
+        \item \texttt{EXT\_SOURCE\_1/2/3}  external credit scores
+        \item Demographics, employment, credit bureau
       \end{itemize}
 
-    \column{0.52\textwidth}
-      \vspace{-0.4em}
+    \column{0.50\textwidth}
+      \vspace{-0.3em}
       \includegraphics[width=\linewidth]{../result/home_credit/figure/class_balance.png}
   \end{columns}
 \end{frame}
 
 % --------------------------- Slide 4 — Classic ML ---------------------------
 \begin{frame}{Classic ML Models}
-  \centering
   \small
-  \begin{tabularx}{0.95\textwidth}{@{}l L r@{}}
+  \begin{tabularx}{\textwidth}{@{}l L r@{}}
     \toprule
-    \hp{Model (family)}                                  & \hp{Best hyperparameters}                                                              & \hp{Val AUC} \\
+    \hp{Model}             & \hp{Best hyperparameters}                                                & \hp{Val AUC} \\
     \midrule
-    Logistic Regression \emph{(linear)}                  & \texttt{C}=0.1; \texttt{class\_weight=balanced}                                        & 0.7487 \\[0.3em]
-    Random Forest \emph{(bagging)}                       & \texttt{n\_estimators}=200; \texttt{min\_samples\_split}=100; \texttt{class\_weight=balanced} & 0.7470 \\[0.3em]
-    HistGradientBoosting \emph{(boosting)}               & \texttt{learning\_rate}=0.05; \texttt{max\_iter}=200; \texttt{min\_samples\_leaf}=100   & \hi{\textbf{0.7595}} \\
+    Logistic Regression    & \texttt{C}=0.1; \texttt{class\_weight=balanced}                          & 0.7487 \\[0.2em]
+    Random Forest          & \texttt{n\_estimators}=200; \texttt{leaf}-regularized; \texttt{balanced} & 0.7470 \\[0.2em]
+    HistGradientBoosting   & \texttt{lr}=0.05; \texttt{max\_iter}=200; \texttt{leaf}=100              & \hi{\textbf{0.7595}} \\
     \bottomrule
   \end{tabularx}
 
   \bigskip
   \normalsize
-  \raggedright
   \hp{Key takeaways}
   \begin{itemize}
-    \item \texttt{class\_weight='balanced'} on LR / RF — handles imbalance directly in the loss.
-    \item HGBC wins by $\sim$1 AUC point — boosted trees usually dominate tabular data.
-    \item RF overfits at \texttt{leaf=1}: train AUC 0.96 vs val 0.747; regularized leaf wins.
+    \item HGBC wins by $\sim$1 AUC point — boosted trees dominate tabular.
+    \item \texttt{class\_weight='balanced'} on LR / RF handles imbalance in the loss.
+    \item RF overfits at \texttt{leaf=1}: train 0.96 vs val 0.747.
   \end{itemize}
 \end{frame}
 
 % --------------------------- Slide 5 — Neural Network ---------------------------
 \begin{frame}{Neural Network Models}
-  \centering
-  \small
-  \begin{tabularx}{0.85\textwidth}{@{}l c c r@{}}
+  \begin{tabularx}{\textwidth}{@{}l c c r@{}}
     \toprule
-    \hp{Architecture}    & \hp{Hidden layers}    & \hp{Parameters}    & \hp{Val AUC} \\
+    \hp{Architecture}     & \hp{Hidden}      & \hp{Parameters}  & \hp{Val AUC} \\
     \midrule
-    Shallow MLP          & $(64,)$               & $\sim$15.7K        & 0.7405 \\
-    Deep MLP             & $(128, 64, 32)$       & $\sim$42K          & \textbf{0.7416} \\
+    Shallow MLP           & $(64,)$          & $\sim$15.7K      & 0.7405 \\
+    Deep MLP              & $(128, 64, 32)$  & $\sim$42K        & \textbf{0.7416} \\
     \bottomrule
   \end{tabularx}
 
   \bigskip
-  \normalsize
-  \raggedright
-  Both: ReLU \,·\, Adam \,·\, early stopping. Tuned over
-  \texttt{alpha} $\in \{10^{-4}, 10^{-3}\}$, \texttt{lr} $\in \{0.001, 0.005\}$.
+  \small
+  ReLU \,·\, Adam \,·\, early stopping. \\
+  Tuned: \texttt{alpha} $\in \{10^{-4}, 10^{-3}\}$, \texttt{lr} $\in \{0.001, 0.005\}$. \\
   Best for both: $\alpha = 10^{-3}$, \texttt{lr} $= 0.005$.
 
   \bigskip
+  \normalsize
   \hp{Key takeaways}
   \begin{itemize}
     \item Depth doesn't help: $0.7405$ vs $0.7416$  (within noise).
@@ -180,48 +170,49 @@
   \end{columns}
 \end{frame}
 
-% --------------------------- Slide 7 — Imbalance Handling ---------------------------
+% --------------------------- Slide 7 — Imbalance ---------------------------
 \begin{frame}{Imbalance Handling on the Best MLP}
   \centering
-  \small
-  \begin{tabularx}{\textwidth}{@{}l C C C C C C@{}}
+  \footnotesize
+  \begin{tabular}{@{}lcccccc@{}}
     \toprule
-    \hp{Method}              & \hp{Threshold} & \hp{ROC AUC} & \hp{PR AUC} & \hp{Precision} & \hp{Recall} & \hp{F1} \\
+    \hp{Method}              & \hp{Thresh.} & \hp{AUC} & \hp{PR-AUC} & \hp{Prec.} & \hp{Recall} & \hp{F1} \\
     \midrule
     Baseline                 & 0.500 & 0.745 & 0.222 & 0.00 & 0.00 & 0.00 \\
     SMOTE                    & 0.500 & {\color{warn}\textbf{0.648}} & 0.134 & 0.16 & 0.21 & 0.18 \\
     Threshold tuning $\star$ & 0.164 & 0.745 & 0.222 & 0.24 & \hi{\textbf{0.40}} & \textbf{0.30} \\
     \bottomrule
-  \end{tabularx}
+  \end{tabular}
 
-  \bigskip
-  \normalsize
+  \medskip
+  \footnotesize
   \raggedright
   \hp{Key takeaways}
   \begin{itemize}
-    \item Baseline at 0.5 cutoff: AUC 0.745 but recall \hi{0\%}  (no prediction crosses 0.5).
+    \item Baseline at 0.5: AUC 0.745 but recall \hi{0\%}.
     \item SMOTE hurts: AUC drops 0.10.
     \item Threshold tuning at 0.164 lifts recall to \hi{40\%}.
   \end{itemize}
 
   \medskip
-  \begin{center}{\color{accent}\itshape Choosing the threshold matters more than rebalancing the data.}\end{center}
+  \small
+  \begin{center}{\color{accent}\itshape Threshold $>$ resampling.}\end{center}
 \end{frame}
 
 % --------------------------- Slide 8 — Conclusions ---------------------------
 \begin{frame}{Conclusions}
   \hp{What we learned}
   \begin{itemize}
-    \item HistGradientBoosting wins overall  (val AUC $=$ \hi{0.7595}).
-    \item Neural networks tie LR / RF — depth alone does not help on tabular data.
-    \item Threshold tuning lifts MLP recall from \hi{0\% to 40\%}; SMOTE hurt AUC.
+    \item HGBC wins  (val AUC $=$ \hi{0.7595}).
+    \item NN ties LR / RF — depth alone doesn't help on tabular.
+    \item Threshold tuning lifts MLP recall \hi{0\% $\to$ 40\%}; SMOTE hurt AUC.
   \end{itemize}
 
   \bigskip
   \hp{Limitations}
   \begin{itemize}
-    \item Only main \texttt{application\_*.csv} tables  (auxiliary tables typically add several AUC points).
-    \item \texttt{PredefinedSplit} is fast but optimistic; full $k$-fold CV would tighten CIs.
+    \item Only main \texttt{application\_*.csv} tables  (auxiliary tables would add several AUC points).
+    \item Single train/val split (PredefinedSplit), not full $k$-fold CV.
   \end{itemize}
 \end{frame}
 
