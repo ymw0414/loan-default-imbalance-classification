@@ -244,7 +244,7 @@ $\Rightarrow$ severe class imbalance
 
 % --------------------------- Slide 8 — Neural Network Models ---------------------------
 \begin{frame}{Neural Network Models}
-  \footnotesize
+  \scriptsize
   \begin{tabularx}{\textwidth}{@{}l c c r@{}}
     \toprule
     \hp{Architecture}     & \hp{Hidden}      & \hp{Parameters}  & \hp{Val AUC} \\
@@ -255,9 +255,8 @@ $\Rightarrow$ severe class imbalance
   \end{tabularx}
 
   \medskip
-  ReLU \,·\, Adam \,·\, early stopping.
-  Tuned: \texttt{alpha} $\in \{10^{-4}, 10^{-3}\}$, \texttt{lr} $\in \{0.001, 0.005\}$.
-  Best for both: $\alpha = 10^{-3}$, \texttt{lr} $= 0.005$.
+  Both: ReLU \,·\, Adam \,·\, early stopping.
+  Tuned over \texttt{alpha} and \texttt{learning\_rate\_init}; best for both: $\alpha = 10^{-3}$, \texttt{lr} $= 0.005$.
 
   \medskip
   \hp{Key takeaways}
@@ -313,11 +312,10 @@ $\Rightarrow$ severe class imbalance
   \raggedright
   \hp{Key takeaways}
   \begin{itemize}
-    \item Baseline at 0.5: AUC 0.742 but recall \hi{0\%}.
+    \item Baseline at 0.5: AUC 0.742, recall \hi{0\%}.
     \item SMOTE hurts: AUC drops 0.09.
     \item Threshold tuning at 0.139 lifts recall to \hi{41\%}.
   \end{itemize}
-
   \begin{center}{\color{accent}\itshape Threshold $>$ resampling.}\end{center}
 \end{frame}
 
