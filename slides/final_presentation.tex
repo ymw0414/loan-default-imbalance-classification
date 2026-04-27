@@ -51,36 +51,34 @@
 
 % --------------------------- Slide 2 — Problem & Motivation ---------------------------
 \begin{frame}{Problem \& Motivation}
-  \small
-  \begin{tabularx}{\textwidth}{@{}p{2.2cm} L@{}}
-    \toprule
-    \hp{Task}      & Binary classification — predict loan default  (\texttt{TARGET} $\in \{0, 1\}$) \\
-    \hp{Data}      & 307{,}511 applicants $\times$ 122 features  (Kaggle) \\
-    \hp{Challenge} & only \hi{8.07\%} default $\Rightarrow$ severe class imbalance \\
-    \hp{Approach}  & 5 models  (3 classic ML + 2 NN)  + imbalance handling on best NN \\
-    \hp{Metric}    & ROC AUC  (accuracy is misleading on imbalanced data) \\
-    \hp{Question}  & {\color{accent}\itshape Do classic ML and NN respond differently to imbalance handling?} \\
-    \bottomrule
-  \end{tabularx}
+  \begin{description}[Challenge]
+    \item[\hp{Task}]      Binary classification — predict loan default  (\texttt{TARGET} $\in \{0, 1\}$)
+    \item[\hp{Data}]      307{,}511 applicants $\times$ 122 features  (Kaggle)
+    \item[\hp{Challenge}] only \hi{8.07\%} default $\Rightarrow$ severe class imbalance
+    \item[\hp{Approach}]  5 models  (3 classic ML + 2 NN)  +  imbalance handling on best NN
+    \item[\hp{Metric}]    ROC AUC  (accuracy is misleading on imbalanced data)
+  \end{description}
+
+  \medskip
+  \begin{center}
+    {\color{accent}\itshape Research question: do classic ML and NN respond differently to imbalance handling?}
+  \end{center}
 \end{frame}
 
 % --------------------------- Slide 3 — Dataset ---------------------------
 \begin{frame}{Dataset · Home Credit Default Risk}
   \begin{columns}[T,onlytextwidth]
     \column{0.48\textwidth}
-      \footnotesize
-      \begin{tabularx}{\linewidth}{@{}p{2.2cm} L@{}}
-        \toprule
-        \hp{Structure}    & Tabular — row $=$ one applicant \\
-        \hp{Observations} & 307{,}511 train  /  48{,}744 test \\
-        \hp{Features}     & 122  (102 numeric, 16 categorical) \\
-        \hp{Target}       & \texttt{TARGET} $\in \{0, 1\}$\,;\, 1 $=$ default \\
-        \hp{Imbalance}    & \hi{8.07\%} default rate \\
-        \bottomrule
-      \end{tabularx}
+      \small
+      \begin{description}[Observations]
+        \item[\hp{Structure}]    Tabular — row $=$ one applicant
+        \item[\hp{Obs.}]         307{,}511 train  /  48{,}744 test
+        \item[\hp{Features}]     122  (102 numeric, 16 categorical)
+        \item[\hp{Target}]       \texttt{TARGET} $\in \{0, 1\}$\,;\, 1 $=$ default
+        \item[\hp{Imbalance}]    \hi{8.07\%} default rate
+      \end{description}
 
       \medskip
-      \small
       \hp{Strongest signals}
       \begin{itemize}\footnotesize
         \item \texttt{EXT\_SOURCE\_1/2/3}  external credit scores
