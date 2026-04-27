@@ -17,8 +17,8 @@ Predict the probability that a Home Credit applicant defaults on a loan (binary 
 | Logistic Regression  | Linear           | Nathaniel Badalov | `class_weight='balanced'` |
 | Random Forest        | Tree (bagging)   | Nathaniel Badalov | `class_weight='balanced'` |
 | HistGradientBoosting | Tree (boosting)  | Nathaniel Badalov | tuned hyperparameters    |
-| Shallow MLP `(64,)`         | Neural network | Minwoo | baseline / SMOTE / threshold tuning |
-| Deep MLP `(128, 64, 32)`    | Neural network | Minwoo | baseline / SMOTE / threshold tuning |
+| Shallow MLP `(64,)`         | Neural network | Minwoo Yoo | baseline / SMOTE / threshold tuning |
+| Deep MLP `(128, 64, 32)`    | Neural network | Minwoo Yoo | baseline / SMOTE / threshold tuning |
 
 **Validation:** 80/20 stratified train–val split + `GridSearchCV` with `PredefinedSplit`, scored on ROC AUC.
 
