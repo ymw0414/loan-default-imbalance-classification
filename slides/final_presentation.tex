@@ -244,117 +244,152 @@ $\Rightarrow$ severe class imbalance
 %  Back half — NN + imbalance + conclusions (post-leakage-fix numbers)
 % ====================================================================
 
-% --------------------------- Slide 8 — Neural Network Models ---------------------------
+% ---------- Slide 8 — Neural Network Models (Minwoo) ----------
 \begin{frame}{Neural Network Models}
-  \scriptsize
-  \begin{tabularx}{\textwidth}{@{}l c c r@{}}
+
+\footnotesize
+
+\textbf{Architectures tested}
+\begin{tabularx}{\textwidth}{@{}l c c r@{}}
     \toprule
-    \hp{Architecture}     & \hp{Hidden}      & \hp{Parameters}  & \hp{Val AUC} \\
+    \hp{Architecture}     & \hp{Hidden}      & \hp{Parameters}  & \hp{Val ROC AUC} \\
     \midrule
     Shallow MLP           & $(64,)$          & $\sim$15.7K      & 0.7405 \\
     Deep MLP              & $(128, 64, 32)$  & $\sim$42K        & \textbf{0.7416} \\
     \bottomrule
-  \end{tabularx}
+\end{tabularx}
 
-  \medskip
-  Both: ReLU \,·\, Adam \,·\, early stopping.
-  Tuned over \texttt{alpha} and \texttt{learning\_rate\_init}; best for both: $\alpha = 10^{-3}$, \texttt{lr} $= 0.005$.
+\vspace{0.2cm}
 
-  \medskip
-  \hp{Key takeaways}
-  \begin{itemize}
-    \item Depth doesn't help: $0.7405$ vs $0.7416$  (within noise).
-    \item Tripling parameters bought nothing.
-    \item Both NNs land below the classic learners.
-  \end{itemize}
+\textbf{Common setup}
+\begin{itemize}
+    \item ReLU activation, Adam optimizer, early stopping
+    \item Tuned over \texttt{alpha} $\in \{10^{-4}, 10^{-3}\}$, \texttt{lr\_init} $\in \{0.001, 0.005\}$
+    \item Best for both: $\alpha = 10^{-3}$, \texttt{lr} $= 0.005$
+\end{itemize}
+
+\vspace{0.15cm}
+
+\begin{block}{Key takeaways}
+\begin{itemize}
+    \item Depth doesn't help: $0.7405$ vs $0.7416$ (within noise)
+    \item Tripling parameters bought nothing
+    \item Both NNs land below the classic learners
+\end{itemize}
+\end{block}
+
 \end{frame}
 
-% --------------------------- Slide 9 — Combined Leaderboard ---------------------------
+
+% ---------- Slide 9 — Combined Leaderboard (Minwoo) ----------
 \begin{frame}{Combined Leaderboard}
-  \begin{columns}[T,onlytextwidth]
-    \column{0.62\textwidth}
-      \includegraphics[width=\linewidth]{../result/home_credit/figure/model_auc_bar.png}
 
-    \column{0.36\textwidth}
-      \vspace{0.7em}
-      \centering
-      \begin{tabular}{@{}lr@{}}
-        \toprule
-        \hp{Model}      & \hp{Val AUC} \\
-        \midrule
-        HistGradBoost   & \hi{\textbf{0.7595}} \\
-        Logistic Reg.   & 0.7487 \\
-        Random Forest   & 0.7470 \\
-        Deep MLP        & 0.7416 \\
-        Shallow MLP     & 0.7405 \\
-        \bottomrule
-      \end{tabular}
+\footnotesize
 
-      \bigskip
-      \raggedright
-      Tree boosting wins by $\sim$1 AUC point.
-  \end{columns}
+\begin{columns}[T,onlytextwidth]
+
+\column{0.60\textwidth}
+\includegraphics[width=\linewidth]{../result/home_credit/figure/model_auc_bar.png}
+
+\column{0.38\textwidth}
+
+\textbf{Final ranking}
+\begin{tabular}{@{}lr@{}}
+    \toprule
+    \hp{Model}     & \hp{Val ROC AUC} \\
+    \midrule
+    HistGradBoost  & \hi{\textbf{0.7595}} \\
+    Logistic Reg.  & 0.7487 \\
+    Random Forest  & 0.7470 \\
+    Deep MLP       & 0.7416 \\
+    Shallow MLP    & 0.7405 \\
+    \bottomrule
+\end{tabular}
+
+\vspace{0.3cm}
+
+Tree boosting wins by $\sim$1 AUC point — consistent with the literature on tabular data.
+
+\end{columns}
+
 \end{frame}
 
-% --------------------------- Slide 10 — Imbalance Handling (leakage-fixed) ---------------------------
+
+% ---------- Slide 10 — Imbalance Handling (Minwoo, leakage-fixed) ----------
 \begin{frame}{Imbalance Handling on the Best MLP}
-  \centering
-  \scriptsize
-  \begin{tabular}{@{}lcccccc@{}}
+
+\scriptsize
+
+\textbf{Three strategies compared} (sklearn \texttt{MLPClassifier} does not support \texttt{class\_weight})
+
+\begin{tabular}{@{}lcccccc@{}}
     \toprule
-    \hp{Method}              & \hp{Thresh.} & \hp{AUC} & \hp{PR-AUC} & \hp{Prec.} & \hp{Recall} & \hp{F1} \\
+    \hp{Method}              & \hp{Threshold} & \hp{ROC AUC} & \hp{PR AUC} & \hp{Precision} & \hp{Recall} & \hp{F1} \\
     \midrule
     Baseline                 & 0.500 & 0.742 & 0.217 & 0.00 & 0.00 & 0.00 \\
     SMOTE                    & 0.500 & {\color{warn}\textbf{0.648}} & 0.134 & 0.16 & 0.21 & 0.18 \\
     Threshold tuning $\star$ & 0.139 & 0.742 & 0.217 & 0.22 & \hi{\textbf{0.41}} & \textbf{0.29} \\
     \bottomrule
-  \end{tabular}
+\end{tabular}
 
-  \medskip
-  \raggedright
-  \hp{Key takeaways}
-  \begin{itemize}
-    \item Baseline at 0.5: AUC 0.742, recall \hi{0\%}.
-    \item SMOTE hurts: AUC drops 0.09.
-    \item Threshold tuning at 0.139 lifts recall to \hi{41\%}.
-  \end{itemize}
-  \begin{center}{\color{accent}\itshape Threshold $>$ resampling.}\end{center}
+\vspace{0.2cm}
+
+\textbf{Key takeaways}
+\begin{itemize}
+    \item Baseline at 0.5: AUC 0.742 but recall \hi{0\%}
+    \item SMOTE hurts: AUC drops 0.09
+    \item Threshold tuning at 0.139 lifts recall to \hi{41\%}
+\end{itemize}
+
+\vspace{0.1cm}
+
+\begin{block}{Headline}
+Choosing the threshold matters more than rebalancing the data.
+\end{block}
+
 \end{frame}
 
-% --------------------------- Slide 11 — Conclusions ---------------------------
+
+% ---------- Slide 11 — Conclusions ----------
 \begin{frame}{Conclusions}
-  \scriptsize
-  \hp{Best model overall}
-  \begin{itemize}
-    \item \textbf{HGBC wins}  (val AUC $=$ \hi{0.7595}) — nonlinear tree boosting captures feature interactions.
-    \item \textbf{LR \& RF}  close behind — LR benefits from strong linear predictors (\texttt{EXT\_SOURCE\_*}).
-    \item \textbf{Deep MLP} (0.7416) $\approx$ Shallow MLP (0.7405) — depth doesn't help.
-    \item Both NNs lag classic shallow learners by $\sim$1--2 AUC pts.
-  \end{itemize}
 
-  \medskip
-  \hp{Imbalance handling on the MLP}
-  \begin{itemize}
-    \item Threshold tuning lifts recall \hi{0\% $\to$ 41\%}; SMOTE hurts AUC.
-    \item Choosing the threshold matters more than rebalancing the data.
-  \end{itemize}
+\scriptsize
 
-  \medskip
-  \hp{Limitations}
-  \begin{itemize}
-    \item Only main \texttt{application\_*.csv} tables  (auxiliary tables would add several AUC points).
-    \item Single train/val split, not full $k$-fold CV.
-  \end{itemize}
+\textbf{Best model overall}
+\begin{itemize}
+    \item HGBC wins (val AUC $=$ \hi{0.7595}) — nonlinear tree boosting captures feature interactions
+    \item LR and RF close behind — LR benefits from strong linear predictors (\texttt{EXT\_SOURCE\_*})
+    \item Deep MLP (0.7416) $\approx$ Shallow MLP (0.7405) — depth doesn't help
+    \item Both NNs lag classic shallow learners by $\sim$1--2 AUC points
+\end{itemize}
+
+\vspace{0.2cm}
+
+\textbf{Imbalance handling on the MLP}
+\begin{itemize}
+    \item Threshold tuning lifts recall \hi{0\% $\to$ 41\%}; SMOTE hurts AUC
+    \item Choosing the threshold matters more than rebalancing the data
+\end{itemize}
+
+\vspace{0.2cm}
+
+\textbf{Limitations}
+\begin{itemize}
+    \item Only main \texttt{application\_*.csv} tables (auxiliary tables would add several AUC points)
+    \item Single train/val split, not full $k$-fold CV
+\end{itemize}
+
 \end{frame}
 
-% --------------------------- Slide 12 — Recording ---------------------------
+
+% ---------- Slide 12 — Recording ----------
 \begin{frame}{Recording}
-  \vfill
-  \begin{center}
-    {\Large \texttt{<<INSERT RECORDING LINK BEFORE SUBMISSION>>}}\\[1.5em]
-    {\color{muted}\itshape Minwoo Yoo  \,·\,  Nathaniel Badalov}
-  \end{center}
-  \vfill
+\vfill
+\begin{center}
+{\Large \texttt{<<INSERT RECORDING LINK BEFORE SUBMISSION>>}}\\[1.5em]
+{\color{muted}\itshape Minwoo Yoo  \,·\,  Nathaniel Badalov}
+\end{center}
+\vfill
 \end{frame}
 
 \end{document}
