@@ -1,20 +1,24 @@
 # ============================================================
-# Data files (too large for GitHub; download from Kaggle)
+# Data (download from Kaggle — see data/README.md)
 # ============================================================
 data/*.csv
 data/*.zip
 data/*.parquet
 data/*.feather
-Nathan/*.zip
-Nathan/drive-download-*
 
 # ============================================================
-# Recordings & large media (host externally; embed link in slides)
+# LaTeX build artifacts
 # ============================================================
-recording/*.mp4
-recording/*.mov
-recording/*.mkv
-recording/*.webm
+slides/*.aux
+slides/*.log
+slides/*.nav
+slides/*.out
+slides/*.snm
+slides/*.toc
+slides/*.vrb
+slides/*.fls
+slides/*.fdb_latexmk
+slides/*.synctex.gz
 
 # ============================================================
 # Python
