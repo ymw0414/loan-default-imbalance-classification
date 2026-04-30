@@ -20,7 +20,7 @@ handling techniques.
   decision threshold matters more than rebalancing the data**, and tree-based
   models retain a meaningful edge over neural networks.
 
-![Model comparison](result/home_credit/figure/model_auc_bar.png)
+![Model comparison](results/figures/model_auc_bar.png)
 
 ## Dataset
 
@@ -84,7 +84,7 @@ Scoring metric: ROC AUC.
 **Threshold tuning preserves AUC and lifts recall from 0% to 41%; SMOTE moved
 AUC in the wrong direction.**
 
-![Imbalance comparison](result/home_credit/figure/imbalance_compare.png)
+![Imbalance comparison](results/figures/imbalance_compare.png)
 
 ## Why neural networks underperformed
 
@@ -106,13 +106,13 @@ reasons, ordered by likely contribution:
 ```
 .
 ├── notebooks/
-│   ├── final_project.ipynb        # full analysis (EDA → models → comparison)
-│   └── pmlm_utilities_shallow.py  # course utility helpers
-├── result/home_credit/
-│   ├── combined_model_comparison.csv   # leaderboard
-│   ├── cv_results/GridSearchCV/        # raw GridSearchCV CSVs per model
-│   ├── figure/                         # charts used in slides + README
-│   └── submission/submission_mlp.csv   # Kaggle submission
+│   ├── home_credit_default.ipynb  # full analysis (EDA → models → comparison)
+│   └── pmlm_utilities_shallow.py  # utility helpers
+├── results/
+│   ├── leaderboard.csv            # final 5-model comparison
+│   ├── cv_results/                # raw GridSearchCV CSVs per model
+│   ├── figures/                   # charts used in slides + README
+│   └── submissions/               # Kaggle submission
 ├── slides/
 │   ├── final_presentation.pdf     # 13-slide deck
 │   └── final_presentation.tex     # LaTeX (Beamer / metropolis) source
@@ -131,12 +131,11 @@ pip install scikit-learn imbalanced-learn pandas numpy matplotlib seaborn jupyte
 #    (see data/README.md for the exact files)
 
 # 3. run the notebook end-to-end
-jupyter notebook notebooks/final_project.ipynb
+jupyter notebook notebooks/home_credit_default.ipynb
 ```
 
 To force a fresh hyperparameter search instead of loading cached CV results,
-delete the CSVs under `result/home_credit/cv_results/GridSearchCV/` before
-running.
+delete the CSVs under `results/cv_results/` before running.
 
 ## Authors
 
